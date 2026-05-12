@@ -92,12 +92,11 @@ class _SearchPageState extends State<SearchPage> {
                   runSpacing: -10,
                   children: _foundFoods.map((food) {
                     return Material(
-                      // Tambahkan Material agar efek InkWell muncul
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(15),
                         onTap: () {
-                          print("Move To: ${food.name}");
+                          print("Move To: ${food.name} with ID: ${food.id}");
                           Navigator.push(
                             context,
                             MaterialPageRoute(

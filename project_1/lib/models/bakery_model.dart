@@ -6,6 +6,7 @@ class Bakery {
   final double distance;
   final String duration;
   final int stock;
+  final String closing_time;
 
   Bakery({
     required this.id,
@@ -15,24 +16,22 @@ class Bakery {
     required this.distance,
     required this.duration,
     required this.stock,
+    required this.closing_time,
   });
 
-  // Fungsi Factory untuk mengubah JSON (dari Node.js) menjadi Object Bakery
   factory Bakery.fromJson(Map<String, dynamic> json) {
     return Bakery(
       id: json['id'],
       name: json['name'],
       image: json['image'],
-      // Kita gunakan .toDouble() dan .toString() untuk mencegah error
-      // jika tipe data di MySQL sedikit berbeda (misal: String vs Double)
       rating: double.parse(json['rating'].toString()),
       distance: double.parse(json['distance'].toString()),
       duration: json['duration'],
       stock: int.parse(json['stock'].toString()),
+      closing_time: json['closing_time']?.toString() ?? "-",
     );
   }
 
-  // (Opsional) Fungsi untuk mengubah Object kembali ke JSON jika ingin mengirim data ke BE
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -42,6 +41,7 @@ class Bakery {
       'distance': distance,
       'duration': duration,
       'stock': stock,
+      'closing_time': closing_time,
     };
   }
 }

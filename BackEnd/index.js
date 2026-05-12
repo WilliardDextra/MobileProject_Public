@@ -9,7 +9,19 @@ app.use(express.json());
 app.get("/api/bakeries", async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM bakeries");
-    res.json(rows); // Mengirim data sebagai list JSON
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get("/api/bakeries/:id/menus", async (req, res) => {
+  const bakeryId = req.params.id; // Mengambil ID dari URL
+  try {
+    const [rows] = await db.query("SELECT * FROM menus WHERE bakery_id = ?", [
+      bakeryId,
+    ]);
+    res.json(rows);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

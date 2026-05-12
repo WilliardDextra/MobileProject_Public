@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:project_1/colorPallette.dart';
 import 'package:project_1/models/bakery_model.dart';
+import 'package:project_1/models/menu_model.dart';
+import 'package:project_1/services/bakery_service.dart';
 
 class DetailPage extends StatefulWidget {
   final Bakery productDetail;
@@ -11,10 +14,21 @@ class DetailPage extends StatefulWidget {
 }
 
 class _DetailPageState extends State<DetailPage> {
-  int _quantity = 1;
+  late Future<List<Menu>> futureMenus;
+  void initState() {
+    super.initState();
+
+    futureMenus = BakeryService().fetchMenus(widget.productDetail.id);
+  }
+
+  int _selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
+    final rawClosingTime = widget.productDetail.closing_time;
+    final closingTime = rawClosingTime.length >= 5
+        ? rawClosingTime.substring(0, 5)
+        : rawClosingTime;
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -54,6 +68,60 @@ class _DetailPageState extends State<DetailPage> {
                   decoration: BoxDecoration(
                     color: Color.fromARGB(255, 255, 255, 255),
                   ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _createVoucherBox(
+                          "Discount 1",
+                          "Discount Description Goes Here",
+                        ),
+                        _createVoucherBox(
+                          "Discount 2",
+                          "Discount Description Goes Here",
+                        ),
+                        _createVoucherBox(
+                          "Discount 3",
+                          "Discount Description Goes Here",
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    "Our Menus",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+
+                FutureBuilder<List<Menu>>(
+                  future: futureMenus,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      return Center(child: Text("Error: ${snapshot.error}"));
+                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const Center(child: Text("No menus available."));
+                    }
+
+                    // Tampilkan list menu dari database
+                    return Column(
+                      children: snapshot.data!.map((menu) {
+                        return MenuCard(
+                          fImage: menu.fImage,
+                          fName: menu.fName,
+                          fRating: menu.fRating,
+                          fSold: menu.fSold,
+                          fDescription: menu.fDescription,
+                          fPrice: menu.fPrice,
+                          fStock: menu.fStock,
+                        );
+                      }).toList(),
+                    );
+                  },
                 ),
               ],
             ),
@@ -61,20 +129,158 @@ class _DetailPageState extends State<DetailPage> {
               top: 140,
               child: Container(
                 width: 340,
-                height: 130,
+                height: 150,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.black, width: 2),
                   color: Colors.white,
-                  boxShadow: [BoxShadow(blurRadius: 10, color: Colors.black26)],
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: 15,
+                      color: const Color.fromARGB(225, 0, 0, 0),
+                    ),
+                  ],
                 ),
+
                 child: Column(
                   children: [
+                    SizedBox(height: 6),
                     Text(
                       widget.productDetail.name,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          "⭐ ${widget.productDetail.rating}",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Text("●", style: TextStyle(color: Colors.grey)),
+                        SizedBox(width: 4),
+                        Text(
+                          "Avalaible: ${widget.productDetail.stock}",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w400,
+                            color: const Color.fromARGB(255, 119, 119, 119),
+                            fontSize: 12,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Text("●", style: TextStyle(color: Colors.grey)),
+                        SizedBox(width: 4),
+                        Text(
+                          "Close - $closingTime",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: const Color.fromARGB(255, 119, 119, 119),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const Divider(
+                      color: Color.fromARGB(255, 160, 160, 160),
+                      thickness: 1.5,
+                      indent: 20,
+                      endIndent: 20,
+                    ),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          "${widget.productDetail.distance} Km",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          "●",
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          "${widget.productDetail.duration} min",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 8),
+                    Container(
+                      width: 200,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(100),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(60),
+                            spreadRadius: 3,
+                            blurRadius: 3,
+                            offset: const Offset(1.5, 2.5),
+                          ),
+                        ],
+                      ),
+
+                      child: Row(
+                        children: [
+                          const SizedBox(height: 20),
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: List.generate(2, (index) {
+                              final labels = ["Take Away", "Pick Up"];
+                              bool isActive = _selectedIndex == index;
+
+                              return GestureDetector(
+                                onTap: () =>
+                                    setState(() => _selectedIndex = index),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 17.3,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isActive
+                                        ? AppColors.stormyTeal
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    labels[index],
+                                    style: TextStyle(
+                                      color: isActive
+                                          ? Colors.white
+                                          : Colors.black,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -84,6 +290,264 @@ class _DetailPageState extends State<DetailPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+Widget _createVoucherBox(String Discount_Title, String Discount_Description) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(
+        margin: const EdgeInsets.only(top: 84, left: 8, right: 8),
+        height: 60,
+        width: 200,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+          color: Colors.white,
+          border: Border.all(width: 1, color: Colors.grey),
+          boxShadow: [
+            BoxShadow(
+              color: const Color.fromARGB(200, 0, 0, 0).withAlpha(100),
+              spreadRadius: 2,
+              blurRadius: 3,
+              offset: const Offset(2, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 10),
+            Image.asset("images/DiscountIcon.png", height: 28),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    Discount_Title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                    softWrap: true,
+                  ),
+                  Text(
+                    Discount_Description,
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                    softWrap: true,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12), // Jarak aman di sisi kanan
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+class MenuCard extends StatefulWidget {
+  final String fImage;
+  final String fName;
+  final double fRating;
+  final int fSold;
+  final String fDescription;
+  final double fPrice;
+  final int fStock;
+
+  const MenuCard({
+    super.key,
+    required this.fImage,
+    required this.fName,
+    required this.fRating,
+    required this.fSold,
+    required this.fDescription,
+    required this.fPrice,
+    required this.fStock,
+  });
+
+  @override
+  State<MenuCard> createState() => _MenuCardState();
+}
+
+class _MenuCardState extends State<MenuCard> {
+  int quantity = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          color: Colors.white,
+          child: Column(
+            children: [
+              Divider(
+                color: Color.fromARGB(255, 131, 131, 131),
+                thickness: 1.5,
+                indent: 20,
+                endIndent: 20,
+              ),
+              SizedBox(height: 6),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255, 255, 255, 255),
+          ),
+          padding: const EdgeInsets.only(left: 14, right: 14, bottom: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.fName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.star, color: Colors.orange, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          "${widget.fRating}",
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "(${widget.fSold}+)",
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.fDescription,
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      "Rp${widget.fPrice.toStringAsFixed(3)}",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                children: [
+                  Stack(
+                    alignment: Alignment.bottomCenter,
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(width: 2, color: Colors.black),
+                          image: DecorationImage(
+                            image: AssetImage(widget.fImage),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: -15,
+                        child: Container(
+                          width: 70,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              width: 2,
+                              color: AppColors.stormyTeal,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              GestureDetector(
+                                onTap: quantity > 0
+                                    ? () {
+                                        setState(() {
+                                          quantity--;
+                                        });
+                                      }
+                                    : null,
+                                child: Text(
+                                  "-",
+                                  style: TextStyle(
+                                    color: quantity > 0
+                                        ? AppColors.stormyTeal
+                                        : Colors.grey,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+
+                              Text(
+                                "$quantity",
+                                style: TextStyle(
+                                  color: AppColors.stormyTeal,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+
+                              GestureDetector(
+                                onTap: quantity < widget.fStock
+                                    ? () {
+                                        setState(() {
+                                          quantity++;
+                                        });
+                                      }
+                                    : null,
+                                child: Text(
+                                  "+",
+                                  style: TextStyle(
+                                    color: quantity < widget.fStock
+                                        ? AppColors.stormyTeal
+                                        : Colors.grey,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

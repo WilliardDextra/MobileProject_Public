@@ -16,7 +16,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData(fontFamily: 'Poppins'),
+      theme: ThemeData(
+        scaffoldBackgroundColor: Colors.white,
+
+        canvasColor: Colors.white,
+        useMaterial3: true,
+        fontFamily: 'Poppins',
+      ),
+
       debugShowCheckedModeBanner: false,
       home: const MyHomePage(),
     );

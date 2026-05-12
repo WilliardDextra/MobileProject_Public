@@ -70,6 +70,7 @@ flutter:
     - images/FoodSaver2_Green.png
     - images/FoodSaver2_Orange.png
     - images/image1.jpg
+    - images/DiscountIcon.png
     - images/sushi.png
     - images/steak.png
     - images/englishBreakfast.png
@@ -83,6 +84,8 @@ flutter:
     - images/pancake_background.jpg
     - images/noodle_background.png
     - images/tacos_background.jpg
+    - images/F_Croissant.png
+    - images/F_ChocolateDanish.png
     - animation/BackgroundMain.json
     - animation/BackgroundMain2.json
     - animation/BackgroundMain2.2.json
