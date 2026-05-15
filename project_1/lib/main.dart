@@ -2,9 +2,11 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
 import 'colorPallette.dart';
 import 'search.dart';
 import 'cart.dart';
+import 'providers/cart_provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,17 +17,20 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData(
-        scaffoldBackgroundColor: Colors.white,
+    return ChangeNotifierProvider(
+      create: (_) => CartProvider(),
+      child: MaterialApp(
+        theme: ThemeData(
+          scaffoldBackgroundColor: Colors.white,
 
-        canvasColor: Colors.white,
-        useMaterial3: true,
-        fontFamily: 'Poppins',
+          canvasColor: Colors.white,
+          useMaterial3: true,
+          fontFamily: 'Poppins',
+        ),
+
+        debugShowCheckedModeBanner: false,
+        home: const MyHomePage(),
       ),
-
-      debugShowCheckedModeBanner: false,
-      home: const MyHomePage(),
     );
   }
 }
@@ -211,10 +216,10 @@ class _MyHomePageState extends State<MyHomePage> {
       from: 200,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16),
-        height: 166,
+        height: 150,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: AppColors.stormyTeal,
+          color: AppColors.cream,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -237,7 +242,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     Padding(
                       padding: const EdgeInsets.only(top: 9),
                       child: Image.asset(
-                        "images/FoodSaver_Orange.png",
+                        "images/FoodSaver_Green.png",
                         fit: BoxFit.cover,
                         height: 80,
                       ),
@@ -245,21 +250,21 @@ class _MyHomePageState extends State<MyHomePage> {
                     Expanded(
                       child: Column(
                         children: [
-                          SizedBox(height: 16),
+                          SizedBox(height: 10),
                           Text(
                             "Welcome Back User",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
-                              color: AppColors.powderBlush,
+                              color: AppColors.stormyTeal,
                             ),
                           ),
-                          SizedBox(height: 8),
+                          SizedBox(height: 6),
                           Text(
                             "You Saved 35 Portion",
                             style: TextStyle(
-                              color: AppColors.tigerFlame,
-                              fontWeight: FontWeight.w700,
+                              color: AppColors.stormyTeal,
+                              fontWeight: FontWeight.w600,
                               fontSize: 15,
                             ),
                           ),
@@ -271,101 +276,103 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
 
-            SizedBox(height: 6),
             const Divider(
-              color: AppColors.powderBlush,
+              color: AppColors.stormyTeal,
               thickness: 1.5,
               indent: 20,
               endIndent: 20,
             ),
 
             Expanded(
-              child: Row(
-                children: [
-                  SizedBox(width: 20),
-                  Container(
-                    height: 60,
-                    width: 140,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Row(
+                  children: [
+                    SizedBox(width: 20),
+                    Container(
+                      height: 60,
+                      width: 140,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset(
+                            "images/Voucher_Icon.png",
+                            width: 25,
+                            height: 22,
+                          ),
+                          const SizedBox(width: 8),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Vouchers",
+                                style: TextStyle(
+                                  color: AppColors.stormyTeal,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              Text(
+                                "99+",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.stormyTeal,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
 
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          "images/voucher_logo.png",
-                          width: 25,
-                          height: 22,
-                        ),
-                        const SizedBox(width: 8),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Vouchers",
-                              style: TextStyle(
-                                color: AppColors.tigerFlame,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            Text(
-                              "99+",
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.powderBlush,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                    SizedBox(width: 6),
+                    Container(
+                      height: 60,
+                      width: 140,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
 
-                  SizedBox(width: 6),
-                  Container(
-                    height: 60,
-                    width: 140,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          "images/coin_logo.png",
-                          width: 25,
-                          height: 22,
-                        ),
-                        const SizedBox(width: 8),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "FoodCoins",
-                              style: TextStyle(
-                                color: AppColors.tigerFlame,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset(
+                            "images/Coins_Icon.png",
+                            width: 25,
+                            height: 22,
+                          ),
+                          const SizedBox(width: 8),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "FoodCoins",
+                                style: TextStyle(
+                                  color: AppColors.stormyTeal,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
-                            ),
-                            Text(
-                              "3.560",
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.powderBlush,
+                              Text(
+                                "3.560",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.stormyTeal,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  SizedBox(width: 10),
-                ],
+                    SizedBox(width: 10),
+                  ],
+                ),
               ),
             ),
           ],

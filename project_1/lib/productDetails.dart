@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:project_1/colorPallette.dart';
 import 'package:project_1/models/bakery_model.dart';
 import 'package:project_1/models/menu_model.dart';
+import 'package:project_1/providers/cart_provider.dart';
 import 'package:project_1/services/bakery_service.dart';
 
 class DetailPage extends StatefulWidget {
@@ -42,253 +44,347 @@ class _DetailPageState extends State<DetailPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Stack(
-          alignment: Alignment.bottomCenter,
-          clipBehavior: Clip.none,
-          children: [
-            Column(
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              clipBehavior: Clip.none,
               children: [
-                Container(
-                  height: 200,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Color.fromARGB(150, 0, 96, 96),
-                  ),
-                  child: ClipRRect(
-                    child: Image.asset(
-                      widget.productDetail.image,
-                      fit: BoxFit.cover,
+                Column(
+                  children: [
+                    Container(
+                      height: 200,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Color.fromARGB(150, 0, 96, 96),
+                      ),
+                      child: ClipRRect(
+                        child: Image.asset(
+                          widget.productDetail.image,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
-                  ),
+                    Container(
+                      height: 200,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Color.fromARGB(255, 255, 255, 255),
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _createVoucherBox(
+                              "Discount 1",
+                              "Discount Description Goes Here",
+                            ),
+                            _createVoucherBox(
+                              "Discount 2",
+                              "Discount Description Goes Here",
+                            ),
+                            _createVoucherBox(
+                              "Discount 3",
+                              "Discount Description Goes Here",
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        "Our Menus",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+
+                    FutureBuilder<List<Menu>>(
+                      future: futureMenus,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        } else if (snapshot.hasError) {
+                          return Center(
+                            child: Text("Error: ${snapshot.error}"),
+                          );
+                        } else if (!snapshot.hasData ||
+                            snapshot.data!.isEmpty) {
+                          return const Center(
+                            child: Text("No menus available."),
+                          );
+                        }
+
+                        // Tampilkan list menu dari database
+                        return Column(
+                          children: snapshot.data!.map((menu) {
+                            return MenuCard(
+                              menu: menu,
+                              bakery: widget.productDetail,
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 140),
+                  ],
                 ),
-                Container(
-                  height: 200,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Color.fromARGB(255, 255, 255, 255),
-                  ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
+                Positioned(
+                  top: 140,
+                  child: Container(
+                    width: 340,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.black, width: 2),
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          blurRadius: 15,
+                          color: const Color.fromARGB(225, 0, 0, 0),
+                        ),
+                      ],
+                    ),
+
+                    child: Column(
                       children: [
-                        _createVoucherBox(
-                          "Discount 1",
-                          "Discount Description Goes Here",
+                        SizedBox(height: 6),
+                        Text(
+                          widget.productDetail.name,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                        _createVoucherBox(
-                          "Discount 2",
-                          "Discount Description Goes Here",
+                        SizedBox(height: 4),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              "⭐ ${widget.productDetail.rating}",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Text("●", style: TextStyle(color: Colors.grey)),
+                            SizedBox(width: 4),
+                            Text(
+                              "Avalaible: ${widget.productDetail.stock}",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w400,
+                                color: const Color.fromARGB(255, 119, 119, 119),
+                                fontSize: 12,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Text("●", style: TextStyle(color: Colors.grey)),
+                            SizedBox(width: 4),
+                            Text(
+                              "Close - $closingTime",
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: const Color.fromARGB(255, 119, 119, 119),
+                              ),
+                            ),
+                          ],
                         ),
-                        _createVoucherBox(
-                          "Discount 3",
-                          "Discount Description Goes Here",
+
+                        const Divider(
+                          color: Color.fromARGB(255, 160, 160, 160),
+                          thickness: 1.5,
+                          indent: 20,
+                          endIndent: 20,
+                        ),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              "${widget.productDetail.distance} Km",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              "●",
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              "${widget.productDetail.duration} min",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        SizedBox(height: 8),
+                        Container(
+                          width: 200,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(100),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(60),
+                                spreadRadius: 3,
+                                blurRadius: 3,
+                                offset: const Offset(1.5, 2.5),
+                              ),
+                            ],
+                          ),
+
+                          child: Row(
+                            children: [
+                              const SizedBox(height: 20),
+
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: List.generate(2, (index) {
+                                  final labels = ["Take Away", "Pick Up"];
+                                  bool isActive = _selectedIndex == index;
+
+                                  return GestureDetector(
+                                    onTap: () =>
+                                        setState(() => _selectedIndex = index),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 17.3,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isActive
+                                            ? AppColors.stormyTeal
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        labels[index],
+                                        style: TextStyle(
+                                          color: isActive
+                                              ? Colors.white
+                                              : Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    "Our Menus",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-
-                FutureBuilder<List<Menu>>(
-                  future: futureMenus,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    } else if (snapshot.hasError) {
-                      return Center(child: Text("Error: ${snapshot.error}"));
-                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return const Center(child: Text("No menus available."));
-                    }
-
-                    // Tampilkan list menu dari database
-                    return Column(
-                      children: snapshot.data!.map((menu) {
-                        return MenuCard(
-                          fImage: menu.fImage,
-                          fName: menu.fName,
-                          fRating: menu.fRating,
-                          fSold: menu.fSold,
-                          fDescription: menu.fDescription,
-                          fPrice: menu.fPrice,
-                          fStock: menu.fStock,
-                        );
-                      }).toList(),
-                    );
-                  },
                 ),
               ],
             ),
-            Positioned(
-              top: 140,
-              child: Container(
-                width: 340,
-                height: 150,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.black, width: 2),
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      blurRadius: 15,
-                      color: const Color.fromARGB(225, 0, 0, 0),
+          ),
+          Consumer<CartProvider>(
+            builder: (context, cartProvider, _) {
+              if (cartProvider.isEmpty ||
+                  cartProvider.bakeryId != widget.productDetail.id) {
+                return const SizedBox.shrink();
+              }
+              return Positioned(
+                left: 16,
+                right: 16,
+                bottom: 20,
+                child: GestureDetector(
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('On Proggress for payment')),
+                    );
+                  },
+                  child: Container(
+                    height: 72,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
                     ),
-                  ],
-                ),
-
-                child: Column(
-                  children: [
-                    SizedBox(height: 6),
-                    Text(
-                      widget.productDetail.name,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    decoration: BoxDecoration(
+                      color: AppColors.stormyTeal,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(100),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 4),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          "⭐ ${widget.productDetail.rating}",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${cartProvider.totalItems} item',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Total: Rp${cartProvider.totalPrice.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                        SizedBox(width: 4),
-                        Text("●", style: TextStyle(color: Colors.grey)),
-                        SizedBox(width: 4),
-                        Text(
-                          "Avalaible: ${widget.productDetail.stock}",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w400,
-                            color: const Color.fromARGB(255, 119, 119, 119),
-                            fontSize: 12,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
                           ),
-                        ),
-                        SizedBox(width: 4),
-                        Text("●", style: TextStyle(color: Colors.grey)),
-                        SizedBox(width: 4),
-                        Text(
-                          "Close - $closingTime",
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: const Color.fromARGB(255, 119, 119, 119),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Text(
+                            'Order',
+                            style: TextStyle(
+                              color: AppColors.stormyTeal,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
                     ),
-
-                    const Divider(
-                      color: Color.fromARGB(255, 160, 160, 160),
-                      thickness: 1.5,
-                      indent: 20,
-                      endIndent: 20,
-                    ),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          "${widget.productDetail.distance} Km",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 11,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          "●",
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          "${widget.productDetail.duration} min",
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 8),
-                    Container(
-                      width: 200,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(100),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(60),
-                            spreadRadius: 3,
-                            blurRadius: 3,
-                            offset: const Offset(1.5, 2.5),
-                          ),
-                        ],
-                      ),
-
-                      child: Row(
-                        children: [
-                          const SizedBox(height: 20),
-
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: List.generate(2, (index) {
-                              final labels = ["Take Away", "Pick Up"];
-                              bool isActive = _selectedIndex == index;
-
-                              return GestureDetector(
-                                onTap: () =>
-                                    setState(() => _selectedIndex = index),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 17.3,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isActive
-                                        ? AppColors.stormyTeal
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    labels[index],
-                                    style: TextStyle(
-                                      color: isActive
-                                          ? Colors.white
-                                          : Colors.black,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ],
-        ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -342,7 +438,7 @@ Widget _createVoucherBox(String Discount_Title, String Discount_Description) {
                 ],
               ),
             ),
-            const SizedBox(width: 12), // Jarak aman di sisi kanan
+            const SizedBox(width: 12),
           ],
         ),
       ),
@@ -351,24 +447,10 @@ Widget _createVoucherBox(String Discount_Title, String Discount_Description) {
 }
 
 class MenuCard extends StatefulWidget {
-  final String fImage;
-  final String fName;
-  final double fRating;
-  final int fSold;
-  final String fDescription;
-  final double fPrice;
-  final int fStock;
+  final Menu menu;
+  final Bakery bakery;
 
-  const MenuCard({
-    super.key,
-    required this.fImage,
-    required this.fName,
-    required this.fRating,
-    required this.fSold,
-    required this.fDescription,
-    required this.fPrice,
-    required this.fStock,
-  });
+  const MenuCard({super.key, required this.menu, required this.bakery});
 
   @override
   State<MenuCard> createState() => _MenuCardState();
@@ -376,6 +458,114 @@ class MenuCard extends StatefulWidget {
 
 class _MenuCardState extends State<MenuCard> {
   int quantity = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final cartProvider = context.read<CartProvider>();
+      final existing = cartProvider.items[widget.menu.id];
+      if (existing != null) {
+        setState(() {
+          quantity = existing.quantity;
+        });
+      }
+    });
+  }
+
+  void _addToCart() {
+    final cartProvider = context.read<CartProvider>();
+    if (cartProvider.bakeryId != null &&
+        cartProvider.bakeryId != widget.bakery.id) {
+      _confirmReplaceOrder(cartProvider, 1);
+      return;
+    }
+
+    cartProvider.addItem(menu: widget.menu, bakery: widget.bakery, quantity: 1);
+    setState(() {
+      quantity = 1;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).size.height - 110,
+          left: 70,
+          right: 70,
+        ),
+
+        content: Container(
+          height: 20,
+          width: 24,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(40)),
+          child: Center(
+            child: Text(
+              'New Item Added',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
+            ),
+          ),
+        ),
+        backgroundColor: const Color.fromARGB(200, 255, 91, 31),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+      ),
+    );
+  }
+
+  void _updateCartQuantity(int newQuantity) {
+    final cartProvider = context.read<CartProvider>();
+    if (newQuantity <= 0) {
+      cartProvider.removeItem(widget.menu.id);
+      setState(() {
+        quantity = 0;
+      });
+      return;
+    }
+
+    cartProvider.updateQuantity(widget.menu.id, newQuantity);
+    setState(() {
+      quantity = newQuantity;
+    });
+  }
+
+  void _confirmReplaceOrder(CartProvider cartProvider, int selectedQuantity) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Change Order'),
+          content: const Text(
+            'Are Your Sure To Change Order To This Restaurant?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                cartProvider.addItem(
+                  menu: widget.menu,
+                  bakery: widget.bakery,
+                  quantity: selectedQuantity,
+                  replaceExisting: true,
+                );
+                setState(() {
+                  quantity = selectedQuantity;
+                });
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Order Updated')));
+              },
+              child: const Text('Continued'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -408,7 +598,7 @@ class _MenuCardState extends State<MenuCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.fName,
+                      widget.menu.fName,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -422,26 +612,26 @@ class _MenuCardState extends State<MenuCard> {
                         const Icon(Icons.star, color: Colors.orange, size: 16),
                         const SizedBox(width: 4),
                         Text(
-                          "${widget.fRating}",
+                          "${widget.menu.fRating}",
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          "(${widget.fSold}+)",
+                          "(${widget.menu.fSold}+)",
                           style: const TextStyle(color: Colors.grey),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.fDescription,
+                      widget.menu.fDescription,
                       style: const TextStyle(color: Colors.grey, fontSize: 12),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      "Rp${widget.fPrice.toStringAsFixed(3)}",
+                      "Rp${widget.menu.fPrice.toStringAsFixed(0)}",
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -465,7 +655,7 @@ class _MenuCardState extends State<MenuCard> {
                           borderRadius: BorderRadius.circular(15),
                           border: Border.all(width: 2, color: Colors.black),
                           image: DecorationImage(
-                            image: AssetImage(widget.fImage),
+                            image: AssetImage(widget.menu.fImage),
                             fit: BoxFit.cover,
                           ),
                         ),
@@ -483,61 +673,60 @@ class _MenuCardState extends State<MenuCard> {
                               color: AppColors.stormyTeal,
                             ),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              GestureDetector(
-                                onTap: quantity > 0
-                                    ? () {
-                                        setState(() {
-                                          quantity--;
-                                        });
-                                      }
-                                    : null,
-                                child: Text(
-                                  "-",
-                                  style: TextStyle(
-                                    color: quantity > 0
-                                        ? AppColors.stormyTeal
-                                        : Colors.grey,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
 
-                              Text(
-                                "$quantity",
-                                style: TextStyle(
-                                  color: AppColors.stormyTeal,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-
-                              GestureDetector(
-                                onTap: quantity < widget.fStock
-                                    ? () {
-                                        setState(() {
-                                          quantity++;
-                                        });
-                                      }
-                                    : null,
-                                child: Text(
-                                  "+",
-                                  style: TextStyle(
-                                    color: quantity < widget.fStock
-                                        ? AppColors.stormyTeal
-                                        : Colors.grey,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
+                          child: quantity == 0
+                              ? GestureDetector(
+                                  onTap: _addToCart,
+                                  child: Center(
+                                    child: Text(
+                                      "Add",
+                                      style: TextStyle(
+                                        color: AppColors.stormyTeal,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
                                   ),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () =>
+                                          _updateCartQuantity(quantity - 1),
+                                      child: Text(
+                                        "-",
+                                        style: TextStyle(
+                                          color: AppColors.stormyTeal,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "$quantity",
+                                      style: TextStyle(
+                                        color: AppColors.stormyTeal,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    GestureDetector(
+                                      onTap: () =>
+                                          _updateCartQuantity(quantity + 1),
+                                      child: Text(
+                                        "+",
+                                        style: TextStyle(
+                                          color: AppColors.stormyTeal,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                     ],

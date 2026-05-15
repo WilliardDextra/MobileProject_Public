@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:project_1/colorPallette.dart';
 import 'package:project_1/models/bakery_model.dart';
 import 'package:project_1/productDetails.dart';
 import 'package:project_1/services/bakery_service.dart';
@@ -160,7 +161,7 @@ class _SearchPageState extends State<SearchPage> {
                 ),
 
                 Positioned.fill(
-                  child: Container(color: Colors.white.withOpacity(0.5)),
+                  child: Container(color: Colors.white.withValues(alpha: 0.5)),
                 ),
 
                 Positioned.fill(
@@ -214,13 +215,20 @@ class _SearchPageState extends State<SearchPage> {
     return Stack(
       children: [
         Container(
-          margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
+          margin: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
           height: 214,
           width: 150,
           decoration: BoxDecoration(
             color: const Color.fromARGB(255, 0, 96, 96),
-            border: Border.all(width: 2, color: Colors.black),
             borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: const Color.fromARGB(255, 0, 0, 0).withAlpha(120),
+                spreadRadius: 2,
+                blurRadius: 3,
+                offset: const Offset(3, 3),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,7 +281,14 @@ class _SearchPageState extends State<SearchPage> {
           width: 150,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: Colors.black, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: const Color.fromARGB(255, 0, 0, 0).withAlpha(100),
+                spreadRadius: 2,
+                blurRadius: 3,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(15),
@@ -288,21 +303,10 @@ class _SearchPageState extends State<SearchPage> {
     return Container(
       height: 276,
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 255, 255, 255),
-        border: Border.all(color: Colors.black, width: 2),
-      ),
+      decoration: BoxDecoration(color: AppColors.cream),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
         child: Stack(
           children: [
-            Positioned.fill(
-              child: Lottie.asset(
-                'animation/BackgroundBox.json',
-                fit: BoxFit.cover,
-              ),
-            ),
-
             Positioned.fill(
               child: Container(color: const Color.fromARGB(130, 255, 255, 255)),
             ),
@@ -394,13 +398,20 @@ class _SearchPageState extends State<SearchPage> {
     return Stack(
       children: [
         Container(
-          margin: EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+          margin: EdgeInsets.symmetric(vertical: 6, horizontal: 10),
           height: 100,
           width: 250,
           decoration: BoxDecoration(
-            color: const Color.fromARGB(150, 0, 96, 96),
+            color: AppColors.stormyTeal,
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: Colors.black, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: const Color.fromARGB(255, 0, 0, 0).withAlpha(120),
+                spreadRadius: 2,
+                blurRadius: 3,
+                offset: const Offset(2, 2),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -412,7 +423,7 @@ class _SearchPageState extends State<SearchPage> {
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 15,
-                    color: Colors.white,
+                    color: const Color.fromARGB(255, 255, 255, 255),
                   ),
                 ),
               ),
@@ -424,7 +435,7 @@ class _SearchPageState extends State<SearchPage> {
                   style: TextStyle(
                     fontWeight: FontWeight.w400,
                     fontSize: 11,
-                    color: Colors.white,
+                    color: const Color.fromARGB(255, 255, 255, 255),
                   ),
                 ),
               ),
@@ -433,7 +444,7 @@ class _SearchPageState extends State<SearchPage> {
                 height: 16,
                 width: 130,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.tigerFlame,
                   borderRadius: BorderRadius.circular(25),
                   border: Border.all(color: Colors.black, width: 1),
                 ),
@@ -441,7 +452,7 @@ class _SearchPageState extends State<SearchPage> {
                   "Last Offer!",
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.black,
+                    color: const Color.fromARGB(255, 255, 255, 255),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -457,7 +468,14 @@ class _SearchPageState extends State<SearchPage> {
           decoration: BoxDecoration(
             color: const Color.fromARGB(255, 0, 96, 96),
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: Colors.black, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: const Color.fromARGB(255, 0, 0, 0).withAlpha(80),
+                spreadRadius: 2,
+                blurRadius: 3,
+                offset: const Offset(3, 0),
+              ),
+            ],
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(15),

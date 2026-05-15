@@ -1,288 +1,234 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
+import 'package:project_1/providers/cart_provider.dart';
+import 'package:project_1/models/cart_item.dart';
 
-class CartPage extends StatefulWidget {
+class CartPage extends StatelessWidget {
   const CartPage({super.key});
 
   @override
-  State<CartPage> createState() => _CartPageState();
-}
-
-class _CartPageState extends State<CartPage> {
-  @override
   Widget build(BuildContext context) {
+    final cartProvider = context.watch<CartProvider>();
+    final currency = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp',
+      decimalDigits: 0,
+    );
+
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildCartBox(
-              "Morning Stack Pancake",
-              "images/pancake_background.jpg",
-              4.4,
-              DateTime(2026, 04, 25),
-              "Completed",
-              "Butter Seared Pancake With extra Caramel Sauce and Whip Cream with utensils",
-              20000,
-              1,
-            ),
-            _buildCartBox(
-              "Nisemono Tokyo Ramen",
-              "images/noodle_background.png",
-              4.6,
-              DateTime(2026, 05, 26),
-              "Completed",
-              "Ramen with rich autentic chicken broth, and a hand made noodle",
-              96000,
-              3,
-            ),
-            _buildCartBox(
-              "Morning Stack Pancake",
-              "images/pancake_background.jpg",
-              4.4,
-              DateTime(2026, 04, 25),
-              "Completed",
-              "Butter Seared Pancake With extra Caramel Sauce and Whip Cream with utensils",
-              20000,
-              1,
-            ),
-            _buildCartBox(
-              "Nisemono Tokyo Ramen",
-              "images/noodle_background.png",
-              4.6,
-              DateTime(2026, 05, 26),
-              "Completed",
-              "Ramen with rich autentic chicken broth, and a hand made noodle",
-              96000,
-              3,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-Widget _buildCartBox(
-  String name,
-  String imagePath,
-  double rating,
-  DateTime purchaseDate,
-  String status,
-  String menuPurchased,
-  int price,
-  int quantity,
-) {
-  return Stack(
-    children: [
-      Container(
-        margin: EdgeInsets.only(top: 28, bottom: 12),
-        width: double.infinity,
-        height: 270,
-        padding: EdgeInsets.only(top: 100),
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(130, 0, 96, 96),
-          border: Border.all(color: Colors.black, width: 2),
-        ),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Lottie.asset(
-                'animation/BackgroundMain.json',
-                fit: BoxFit.cover,
-              ),
-            ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(left: 20, top: 30),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Rp$price,00",
-                                style: TextStyle(
-                                  color: const Color.fromARGB(255, 0, 0, 0),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              SizedBox(height: 6),
-                              Text(
-                                "$quantity Items",
-                                style: TextStyle(
-                                  color: const Color.fromARGB(255, 0, 0, 0),
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        Container(
-                          margin: EdgeInsets.only(right: 30),
-                          width: 90,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.all(Radius.circular(20)),
-                            border: Border.all(width: 2, color: Colors.black),
-                          ),
-
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                "Reorder",
-                                style: TextStyle(
-                                  color: const Color.fromARGB(255, 0, 0, 0),
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+      body: cartProvider.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(
+                      Icons.shopping_cart_outlined,
+                      size: 80,
+                      color: Colors.grey,
                     ),
+                    SizedBox(height: 20),
+                    Text(
+                      'Cart Empty',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Get Your Food, Reduce The Waste',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 20,
+                    horizontal: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 0, 96, 96),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        cartProvider.bakeryName ?? 'Resto',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${cartProvider.totalItems} item, ${currency.format(cartProvider.totalPrice)}',
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
+                    itemCount: cartProvider.items.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final item = cartProvider.items.values.toList()[index];
+                      return _buildCartItem(item, cartProvider, currency);
+                    },
                   ),
                 ),
                 Container(
-                  margin: EdgeInsets.all(20),
-                  width: 320,
-                  height: 50,
-                  alignment: Alignment.center,
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 20,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(width: 3, color: Colors.black),
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.shade300),
+                    ),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        "Rate Your Food: ",
+                      const Text(
+                        'Total Payment',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: Colors.black,
+                          fontSize: 16,
                         ),
                       ),
-                      SizedBox(width: 60),
-                      Icon(Icons.star, color: Colors.orange, size: 20),
-                      Icon(Icons.star, color: Colors.orange, size: 20),
-                      Icon(Icons.star, color: Colors.orange, size: 20),
-                      Icon(Icons.star, color: Colors.orange, size: 20),
-                      Icon(Icons.star, color: Colors.orange, size: 20),
+                      Text(
+                        currency.format(cartProvider.totalPrice),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+    );
+  }
+}
 
-      Container(
-        margin: EdgeInsets.only(top: 28, bottom: 12),
-        width: double.infinity,
-        height: 118,
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 247, 174, 110),
-          border: Border.all(color: Colors.black, width: 2),
+Widget _buildCartItem(
+  CartItem item,
+  CartProvider cartProvider,
+  NumberFormat currency,
+) {
+  return Container(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.black26),
+      color: Colors.white,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.05),
+          blurRadius: 8,
+          offset: const Offset(0, 3),
         ),
-        child: Row(
-          children: [
-            SizedBox(width: 12),
-            Stack(
-              alignment: Alignment.bottomCenter,
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 110,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: Colors.black, width: 2),
-                    image: DecorationImage(
-                      image: AssetImage(imagePath),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-
-                Positioned(
-                  bottom: -12,
-                  child: Container(
-                    width: 60,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(width: 2, color: Colors.black),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "★$rating",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+      ],
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(14.0),
+      child: Row(
+        children: [
+          Container(
+            width: 90,
+            height: 90,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              image: DecorationImage(
+                image: AssetImage(item.image),
+                fit: BoxFit.cover,
+              ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  currency.format(item.price),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    SizedBox(height: 6),
-                    Text(
-                      name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove),
+                            onPressed: item.quantity > 1
+                                ? () => cartProvider.updateQuantity(
+                                    item.menuId,
+                                    item.quantity - 1,
+                                  )
+                                : () => cartProvider.removeItem(item.menuId),
+                          ),
+                          Text('${item.quantity}'),
+                          IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () => cartProvider.updateQuantity(
+                              item.menuId,
+                              item.quantity + 1,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(height: 6),
                     Text(
-                      '${DateFormat('dd/MM/yyyy').format(purchaseDate)} ● $status',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w400,
-                        fontSize: 12,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      menuPurchased,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 2,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
+                      currency.format(item.totalPrice),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    ],
+    ),
   );
 }

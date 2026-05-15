@@ -34,6 +34,7 @@ dependencies:
   lottie: ^3.1.0
   http: ^1.2.1
   font_awesome_flutter: ^10.7.0
+  provider: ^6.0.7
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -69,14 +70,12 @@ flutter:
     - images/FoodSaver_Orange.png
     - images/FoodSaver2_Green.png
     - images/FoodSaver2_Orange.png
-    - images/image1.jpg
     - images/DiscountIcon.png
     - images/sushi.png
     - images/steak.png
     - images/englishBreakfast.png
-    - images/user_icon.png
-    - images/voucher_logo.png
-    - images/coin_logo.png
+    - images/Voucher_Icon.png
+    - images/Coins_Icon.png
     - images/pastry.png
     - images/tacos.png
     - images/pancake.png
@@ -86,6 +85,10 @@ flutter:
     - images/tacos_background.jpg
     - images/F_Croissant.png
     - images/F_ChocolateDanish.png
+    - images/F_AlmondBrioche.png
+    - images/F_CheesePuff.png
+    - images/F_CinnamonRoll.png
+    - images/F_HoneyMilkBun.png
     - animation/BackgroundMain.json
     - animation/BackgroundMain2.json
     - animation/BackgroundMain2.2.json
