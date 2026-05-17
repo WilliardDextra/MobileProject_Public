@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:project_1/colorPallette.dart';
 import 'package:provider/provider.dart';
+import 'package:project_1/payment.dart';
 import 'package:project_1/providers/cart_provider.dart';
 import 'package:project_1/models/cart_item.dart';
 
-class CartPage extends StatelessWidget {
+class CartPage extends StatefulWidget {
   const CartPage({super.key});
+
+  @override
+  State<CartPage> createState() => _CartPageState();
+}
+
+class _CartPageState extends State<CartPage> {
+  ServiceType _selectedService = ServiceType.delivery;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +66,7 @@ class CartPage extends StatelessWidget {
                     horizontal: 16,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 0, 96, 96),
+                    color: const Color.fromARGB(255, 255, 255, 255),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.2),
@@ -72,15 +81,153 @@ class CartPage extends StatelessWidget {
                       Text(
                         cartProvider.bakeryName ?? 'Resto',
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: Color.fromARGB(255, 0, 0, 0),
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      if (cartProvider.bakeryDistance != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          '${cartProvider.bakeryDistance?.toStringAsFixed(1)} km away',
+                          style: const TextStyle(
+                            color: Color.fromARGB(179, 0, 0, 0),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 8),
                       Text(
                         '${cartProvider.totalItems} item, ${currency.format(cartProvider.totalPrice)}',
-                        style: const TextStyle(color: Colors.white70),
+                        style: const TextStyle(
+                          color: Color.fromARGB(179, 0, 0, 0),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Service option',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setState(
+                                () => _selectedService = ServiceType.delivery,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      _selectedService == ServiceType.delivery
+                                      ? const Color.fromARGB(255, 0, 96, 96)
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'Delivery',
+                                    style: TextStyle(
+                                      color:
+                                          _selectedService ==
+                                              ServiceType.delivery
+                                          ? Colors.white
+                                          : Colors.black87,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setState(
+                                () => _selectedService = ServiceType.pickUp,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _selectedService == ServiceType.pickUp
+                                      ? const Color.fromARGB(255, 0, 96, 96)
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'Pick Up',
+                                    style: TextStyle(
+                                      color:
+                                          _selectedService == ServiceType.pickUp
+                                          ? Colors.white
+                                          : Colors.black87,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _selectedService == ServiceType.delivery
+                                  ? 'Delivery selected'
+                                  : 'Pick Up selected',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            if (_selectedService == ServiceType.delivery) ...[
+                              const Text('Delivery fee: Rp15.000'),
+                            ] else ...[
+                              Text(
+                                'Est. walking distance: ${cartProvider.bakeryDistance} km',
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Est. duration: ${cartProvider.bakery!.duration} minutes',
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -102,7 +249,7 @@ class CartPage extends StatelessWidget {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
-                    vertical: 16,
+                    vertical: 14,
                     horizontal: 20,
                   ),
                   decoration: BoxDecoration(
@@ -111,21 +258,61 @@ class CartPage extends StatelessWidget {
                       top: BorderSide(color: Colors.grey.shade300),
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
-                        'Total Payment',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Total Payment',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            currency.format(cartProvider.totalPrice),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        currency.format(cartProvider.totalPrice),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color.fromARGB(
+                              255,
+                              0,
+                              96,
+                              96,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    PaymentPage(serviceType: _selectedService),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Proceed to Payment',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.tigerFlame,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -149,9 +336,10 @@ Widget _buildCartItem(
       color: Colors.white,
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.05),
-          blurRadius: 8,
-          offset: const Offset(0, 3),
+          color: const Color.fromARGB(255, 0, 0, 0).withAlpha(100),
+          spreadRadius: 2,
+          blurRadius: 4,
+          offset: const Offset(3, 3),
         ),
       ],
     ),

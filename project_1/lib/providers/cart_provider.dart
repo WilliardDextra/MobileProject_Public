@@ -5,12 +5,13 @@ import 'package:project_1/models/bakery_model.dart';
 
 class CartProvider extends ChangeNotifier {
   final Map<int, CartItem> _items = {};
-  int? _bakeryId;
-  String? _bakeryName;
+  Bakery? _bakery;
 
   Map<int, CartItem> get items => _items;
-  int? get bakeryId => _bakeryId;
-  String? get bakeryName => _bakeryName;
+  Bakery? get bakery => _bakery;
+  int? get bakeryId => _bakery?.id;
+  String? get bakeryName => _bakery?.name;
+  double? get bakeryDistance => _bakery?.distance;
 
   int get totalItems =>
       _items.values.fold(0, (sum, item) => sum + item.quantity);
@@ -20,13 +21,12 @@ class CartProvider extends ChangeNotifier {
   bool get isEmpty => _items.isEmpty;
 
   bool isSameRestaurant(int bakeryId) {
-    return _bakeryId == null || _bakeryId == bakeryId;
+    return _bakery == null || _bakery?.id == bakeryId;
   }
 
   void clearCart() {
     _items.clear();
-    _bakeryId = null;
-    _bakeryName = null;
+    _bakery = null;
     notifyListeners();
   }
 
@@ -36,15 +36,14 @@ class CartProvider extends ChangeNotifier {
     required int quantity,
     bool replaceExisting = false,
   }) {
-    if (_bakeryId != null && _bakeryId != bakery.id) {
+    if (bakeryId != null && bakeryId != bakery.id) {
       if (!replaceExisting) {
         return false;
       }
       clearCart();
     }
 
-    _bakeryId = bakery.id;
-    _bakeryName = bakery.name;
+    _bakery = bakery;
 
     if (_items.containsKey(menu.id)) {
       _items[menu.id]!.quantity += quantity;
@@ -67,8 +66,7 @@ class CartProvider extends ChangeNotifier {
   void removeItem(int menuId) {
     _items.remove(menuId);
     if (_items.isEmpty) {
-      _bakeryId = null;
-      _bakeryName = null;
+      _bakery = null;
     }
     notifyListeners();
   }

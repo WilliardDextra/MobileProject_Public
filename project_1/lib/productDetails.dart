@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:project_1/payment.dart';
 import 'package:provider/provider.dart';
 import 'package:project_1/colorPallette.dart';
 import 'package:project_1/models/bakery_model.dart';
 import 'package:project_1/models/menu_model.dart';
 import 'package:project_1/providers/cart_provider.dart';
-import 'package:project_1/services/bakery_service.dart';
+import 'package:project_1/services/api_service.dart';
 
 class DetailPage extends StatefulWidget {
   final Bakery productDetail;
@@ -20,7 +21,7 @@ class _DetailPageState extends State<DetailPage> {
   void initState() {
     super.initState();
 
-    futureMenus = BakeryService().fetchMenus(widget.productDetail.id);
+    futureMenus = ApiService().fetchMenus(widget.productDetail.id);
   }
 
   int _selectedIndex = 0;
@@ -263,7 +264,7 @@ class _DetailPageState extends State<DetailPage> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceEvenly,
                                 children: List.generate(2, (index) {
-                                  final labels = ["Take Away", "Pick Up"];
+                                  final labels = ["Delivery", "Pick Up"];
                                   bool isActive = _selectedIndex == index;
 
                                   return GestureDetector(
@@ -314,8 +315,15 @@ class _DetailPageState extends State<DetailPage> {
                 bottom: 20,
                 child: GestureDetector(
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('On Proggress for payment')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PaymentPage(
+                          serviceType: _selectedIndex == 0
+                              ? ServiceType.delivery
+                              : ServiceType.pickUp,
+                        ),
+                      ),
                     );
                   },
                   child: Container(

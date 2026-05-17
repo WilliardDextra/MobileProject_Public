@@ -3,7 +3,7 @@ import 'package:lottie/lottie.dart';
 import 'package:project_1/colorPallette.dart';
 import 'package:project_1/models/bakery_model.dart';
 import 'package:project_1/productDetails.dart';
-import 'package:project_1/services/bakery_service.dart';
+import 'package:project_1/services/api_service.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -13,7 +13,7 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  final BakeryService _bakeryService = BakeryService();
+  final ApiService _bakeryService = ApiService();
   late Future<List<Bakery>> _bakeryFuture;
 
   @override
