@@ -7,6 +7,8 @@ import 'package:project_1/register_page.dart';
 import 'package:project_1/models/payment_history.dart';
 import 'package:project_1/providers/app_state_provider.dart';
 import 'package:project_1/providers/cart_provider.dart';
+import 'package:project_1/services/api_service.dart';
+import 'package:project_1/account_page.dart';
 import 'package:provider/provider.dart';
 import 'colorPallette.dart';
 import 'search.dart';
@@ -50,6 +52,25 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPaymentHistory();
+    });
+  }
+
+  Future<void> _loadPaymentHistory() async {
+    final userId = context.read<AppStateProvider>().userId;
+    if (userId == null) return;
+    try {
+      final history = await ApiService().fetchPaymentHistory(userId);
+      context.read<CartProvider>().setHistory(history);
+    } catch (e) {
+      debugPrint('Failed to load payment history: $e');
+    }
+  }
+
   void _onItemTapped(int index) {
     context.read<AppStateProvider>().selectedIndex = index;
   }
@@ -58,7 +79,6 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppStateProvider>();
     final selectedIndex = appState.selectedIndex;
-    final userName = appState.userName;
     final cartProvider = context.watch<CartProvider>();
 
     final List<Widget> pages = [
@@ -66,7 +86,7 @@ class _MyHomePageState extends State<MyHomePage> {
       const SearchPage(),
       _buildLandingPage(),
       CartPage(),
-      const Center(child: Text("Account Page")),
+      const AccountPage(),
     ];
 
     return Scaffold(
@@ -275,7 +295,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ],
                 ),
                 _userCard(),
-                _buildDescriptionBox(),
+                _buildDescriptionBox(context, _onItemTapped),
               ],
             ),
           ),
@@ -285,171 +305,179 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _userCard() {
+    final coins = context.watch<AppStateProvider>().coins;
+    final purchasedCount = context.watch<CartProvider>().history.fold<int>(
+      0,
+      (sum, e) => sum + e.itemCount,
+    );
     return SlideInUp(
       duration: const Duration(milliseconds: 800),
       from: 200,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        height: 150,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: AppColors.cream,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: const Color.fromARGB(255, 0, 0, 0).withAlpha(100),
-              spreadRadius: 2,
-              blurRadius: 4,
-              offset: const Offset(3, 3),
-            ),
-          ],
-        ),
+      child: GestureDetector(
+        onTap: () => _onItemTapped(4),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          height: 150,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppColors.cream,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: const Color.fromARGB(255, 0, 0, 0).withAlpha(100),
+                spreadRadius: 2,
+                blurRadius: 4,
+                offset: const Offset(3, 3),
+              ),
+            ],
+          ),
 
-        child: Column(
-          children: [
-            Expanded(
-              child: Container(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(width: 24),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 9),
-                      child: Image.asset(
-                        "images/FoodSaver_Green.png",
-                        fit: BoxFit.cover,
-                        height: 80,
+          child: Column(
+            children: [
+              Expanded(
+                child: Container(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(width: 24),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 9),
+                        child: Image.asset(
+                          "images/FoodSaver_Green.png",
+                          fit: BoxFit.cover,
+                          height: 80,
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          SizedBox(height: 10),
-                          Text(
-                            "Welcome Back ${context.watch<AppStateProvider>().userName.isEmpty ? 'Guest' : context.watch<AppStateProvider>().userName}",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                              color: AppColors.stormyTeal,
+                      Expanded(
+                        child: Column(
+                          children: [
+                            SizedBox(height: 10),
+                            Text(
+                              "Welcome Back ${context.watch<AppStateProvider>().userName.isEmpty ? 'Guest' : context.watch<AppStateProvider>().userName}",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                color: AppColors.stormyTeal,
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 6),
-                          Text(
-                            "You Saved 35 Portion",
-                            style: TextStyle(
-                              color: AppColors.stormyTeal,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
+                            SizedBox(height: 8),
+                            Text(
+                              "You Saved ${purchasedCount.toString()} Portion${purchasedCount == 1 ? '' : 's'}",
+                              style: TextStyle(
+                                color: AppColors.stormyTeal,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            const Divider(
-              color: AppColors.stormyTeal,
-              thickness: 1.5,
-              indent: 20,
-              endIndent: 20,
-            ),
+              const Divider(
+                color: AppColors.stormyTeal,
+                thickness: 1.5,
+                indent: 20,
+                endIndent: 20,
+              ),
 
-            Expanded(
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Row(
-                  children: [
-                    SizedBox(width: 20),
-                    Container(
-                      height: 60,
-                      width: 140,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+              Expanded(
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Row(
+                    children: [
+                      SizedBox(width: 20),
+                      Container(
+                        height: 60,
+                        width: 140,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset(
+                              "images/Voucher_Icon.png",
+                              width: 25,
+                              height: 22,
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Vouchers",
+                                  style: TextStyle(
+                                    color: AppColors.stormyTeal,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                Text(
+                                  "99+",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.stormyTeal,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
 
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Image.asset(
-                            "images/Voucher_Icon.png",
-                            width: 25,
-                            height: 22,
-                          ),
-                          const SizedBox(width: 8),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Vouchers",
-                                style: TextStyle(
-                                  color: AppColors.stormyTeal,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              Text(
-                                "99+",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.stormyTeal,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
+                      SizedBox(width: 6),
+                      Container(
+                        height: 60,
+                        width: 140,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
 
-                    SizedBox(width: 6),
-                    Container(
-                      height: 60,
-                      width: 140,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Image.asset(
-                            "images/Coins_Icon.png",
-                            width: 25,
-                            height: 22,
-                          ),
-                          const SizedBox(width: 8),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "FoodCoins",
-                                style: TextStyle(
-                                  color: AppColors.stormyTeal,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset(
+                              "images/Coins_Icon.png",
+                              width: 25,
+                              height: 22,
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Coins:",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: AppColors.stormyTeal,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                "20.000",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.stormyTeal,
+                                Text(
+                                  "$coins",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.stormyTeal,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 10),
-                  ],
+                      SizedBox(width: 10),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -498,30 +526,290 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _buildDescriptionBox() {
+  int _selectedFeatureIndex = 0;
+
+  Widget _buildDescriptionBox(
+    BuildContext context,
+    Function(int) onNavigateToPage,
+  ) {
+    final List<Map<String, dynamic>> features = [
+      {
+        'title': 'Affordable Pricing',
+        'icon': Icons.gavel_rounded,
+        'color': AppColors.tigerFlame,
+        'desc':
+            'Enjoy high-quality, delicious surplus meals from your favorite local restaurants at a fraction of the regular price before closing time.',
+        'actionText': 'Start Exploring',
+        'action': () => onNavigateToPage(1),
+      },
+      {
+        'title': 'Gamified Rewards',
+        'icon': Icons.monetization_on_rounded,
+        'color': Colors.amber.shade700,
+        'desc':
+            'Earn FoodCoins with every purchase! Collect coins and use them as real currency to pay for your next sustainable dining experience.',
+        'actionText': 'Check My Coins',
+        'action': () => onNavigateToPage(4),
+      },
+      {
+        'title': 'Flexible Logistics',
+        'icon': Icons.local_shipping_rounded,
+        'color': AppColors.stormyTeal,
+        'desc':
+            'Choose your convenience. Save food your way by scheduling a quick self-pickup at the store or sitting back with our fast delivery options.',
+        'actionText': 'View Order Status',
+        'action': () => onNavigateToPage(0),
+      },
+    ];
+
     return Container(
-      padding: const EdgeInsets.all(15),
-      margin: const EdgeInsets.all(15),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: const Color.fromARGB(19, 0, 0, 0),
-      ),
-      child: const Column(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Together, we turn surplus into opportunity - one meal at a time.",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color.fromARGB(255, 0, 96, 96),
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.stormyTeal, Color(0xFF004D4B)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.stormyTeal.withOpacity(0.15),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.eco_rounded,
+                      color: AppColors.cream,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "FoodSaver".toUpperCase(),
+                      style: const TextStyle(
+                        color: AppColors.cream,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  "\"Together, we turn surplus into opportunity, one meal at a time.\"",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.cream,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    height: 1.4,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  "FoodSaver is a real-time mobile platform combating food waste in urban areas. We connect local restaurants with everyday consumers to redistribute high-quality surplus food before closing time.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.cream.withAlpha(200),
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                ),
+              ],
             ),
           ),
-          SizedBox(height: 10),
-          Text(
-            "Our app connects people with restaurants that offer flash sale deals on surplus food before closing time. By rescuing perfectly good meals, we help reduce food waste, support local businesses, and make quality food more affordable for everyone.",
-            textAlign: TextAlign.justify,
+
+          const SizedBox(height: 28),
+
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 12),
+            child: Text(
+              "Why Choose FoodSaver?",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.stormyTeal,
+              ),
+            ),
+          ),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(features.length, (index) {
+              final isSelected = _selectedFeatureIndex == index;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    _selectedFeatureIndex = index;
+                    (context as Element).markNeedsBuild();
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.cream : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.tigerFlame
+                            : Colors.grey.shade200,
+                        width: isSelected ? 1.5 : 1,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: AppColors.tigerFlame.withAlpha(40),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          features[index]['icon'] as IconData,
+                          color: isSelected
+                              ? AppColors.tigerFlame
+                              : Colors.grey.shade400,
+                          size: 24,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          (features[index]['title'] as String).split(' ')[0],
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? AppColors.stormyTeal
+                                : Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+
+          const SizedBox(height: 16),
+
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: Container(
+              key: ValueKey<int>(_selectedFeatureIndex),
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.grey.shade100),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(30),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color:
+                              (features[_selectedFeatureIndex]['color']
+                                      as Color)
+                                  .withAlpha(40),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          features[_selectedFeatureIndex]['icon'] as IconData,
+                          color:
+                              features[_selectedFeatureIndex]['color'] as Color,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        features[_selectedFeatureIndex]['title'] as String,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.stormyTeal,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    features[_selectedFeatureIndex]['desc'] as String,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 40,
+                    child: OutlinedButton(
+                      onPressed:
+                          features[_selectedFeatureIndex]['action']
+                              as VoidCallback,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.stormyTeal,
+                        side: const BorderSide(
+                          color: AppColors.stormyTeal,
+                          width: 1.2,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            features[_selectedFeatureIndex]['actionText']
+                                as String,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.arrow_forward_rounded, size: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

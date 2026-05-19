@@ -27,8 +27,35 @@ class _LoginPageState extends State<LoginPage> {
 
     if (result['status'] == "success") {
       final userName = result['data']?['nama'] as String? ?? '';
+      final userId = result['data']?['id'];
+      final coins = result['data']?['coins'];
+      final email = result['data']?['email'] as String? ?? '';
+      final phone = result['data']?['phone'] as String? ?? '';
+      final address = result['data']?['address'] as String? ?? '';
+      final role = result['data']?['role'] as String? ?? '';
       if (userName.isNotEmpty) {
         context.read<AppStateProvider>().userName = userName;
+      }
+      if (email.isNotEmpty) {
+        context.read<AppStateProvider>().email = email;
+      }
+      if (phone.isNotEmpty) {
+        context.read<AppStateProvider>().phone = phone;
+      }
+      if (address.isNotEmpty) {
+        context.read<AppStateProvider>().address = address;
+      }
+      if (role.isNotEmpty) {
+        context.read<AppStateProvider>().role = role;
+      }
+      if (userId != null) {
+        context.read<AppStateProvider>().userId = int.tryParse(
+          userId.toString(),
+        );
+      }
+      if (coins != null) {
+        final userCoins = int.tryParse(coins.toString()) ?? 0;
+        context.read<AppStateProvider>().coins = userCoins;
       }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

@@ -39,6 +39,13 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setHistory(List<PaymentHistoryEntry> history) {
+    _history
+      ..clear()
+      ..addAll(history);
+    notifyListeners();
+  }
+
   bool addItem({
     required Menu menu,
     required Bakery bakery,

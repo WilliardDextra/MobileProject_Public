@@ -482,6 +482,17 @@ class _MenuCardState extends State<MenuCard> {
 
   void _addToCart() {
     final cartProvider = context.read<CartProvider>();
+
+    if (widget.menu.fStock <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This item is sold out'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (cartProvider.bakeryId != null &&
         cartProvider.bakeryId != widget.bakery.id) {
       _confirmReplaceOrder(cartProvider, 1);
@@ -664,6 +675,17 @@ class _MenuCardState extends State<MenuCard> {
                           image: DecorationImage(
                             image: AssetImage(widget.menu.fImage),
                             fit: BoxFit.cover,
+                            colorFilter: widget.menu.fStock <= 0
+                                ? ColorFilter.mode(
+                                    const Color.fromARGB(
+                                      255,
+                                      163,
+                                      163,
+                                      163,
+                                    ).withAlpha(150),
+                                    BlendMode.lighten,
+                                  )
+                                : null,
                           ),
                         ),
                       ),
@@ -673,70 +695,97 @@ class _MenuCardState extends State<MenuCard> {
                           width: 70,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: widget.menu.fStock <= 0
+                                ? Colors.grey[300]
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               width: 2,
-                              color: AppColors.stormyTeal,
+                              color: widget.menu.fStock <= 0
+                                  ? const Color.fromARGB(255, 193, 193, 193)
+                                  : AppColors.stormyTeal,
                             ),
                           ),
 
-                          child: quantity == 0
-                              ? GestureDetector(
-                                  onTap: _addToCart,
-                                  child: Center(
-                                    child: Text(
-                                      "Add",
-                                      style: TextStyle(
-                                        color: AppColors.stormyTeal,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
+                          child: widget.menu.fStock <= 0
+                              ? Center(
+                                  child: Text(
+                                    "Sold Out",
+                                    style: TextStyle(
+                                      color: const Color.fromARGB(255, 0, 0, 0),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () =>
-                                          _updateCartQuantity(quantity - 1),
-                                      child: Text(
-                                        "-",
-                                        style: TextStyle(
-                                          color: AppColors.stormyTeal,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18,
+                              : (quantity == 0
+                                    ? GestureDetector(
+                                        onTap: _addToCart,
+                                        child: Center(
+                                          child: Text(
+                                            "Add",
+                                            style: TextStyle(
+                                              color: AppColors.stormyTeal,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      "$quantity",
-                                      style: TextStyle(
-                                        color: AppColors.stormyTeal,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    GestureDetector(
-                                      onTap: () =>
-                                          _updateCartQuantity(quantity + 1),
-                                      child: Text(
-                                        "+",
-                                        style: TextStyle(
-                                          color: AppColors.stormyTeal,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                      )
+                                    : Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          GestureDetector(
+                                            onTap: () => _updateCartQuantity(
+                                              quantity - 1,
+                                            ),
+                                            child: Text(
+                                              "-",
+                                              style: TextStyle(
+                                                color: AppColors.stormyTeal,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 18,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            "$quantity",
+                                            style: TextStyle(
+                                              color: AppColors.stormyTeal,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          GestureDetector(
+                                            onTap: () => _updateCartQuantity(
+                                              quantity + 1,
+                                            ),
+                                            child: Text(
+                                              "+",
+                                              style: TextStyle(
+                                                color: AppColors.stormyTeal,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 18,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      )),
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Stock: ${widget.menu.fStock}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: widget.menu.fStock <= 0 ? Colors.red : Colors.grey,
+                    ),
                   ),
                 ],
               ),

@@ -3,10 +3,11 @@ import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:project_1/colorPallette.dart';
 import 'package:project_1/models/payment_history.dart';
-import 'package:provider/provider.dart';
-import 'package:project_1/models/cart_item.dart';
 import 'package:project_1/providers/app_state_provider.dart';
 import 'package:project_1/providers/cart_provider.dart';
+import 'package:project_1/services/api_service.dart';
+import 'package:provider/provider.dart';
+import 'package:project_1/models/cart_item.dart';
 
 enum ServiceType { delivery, pickUp }
 
@@ -32,7 +33,6 @@ class _PaymentPageState extends State<PaymentPage> {
   String selectedPaymentMethod = 'Credit Card';
   String selectedVoucher = 'None';
   double selectedCoins = 0;
-  final double availableCoins = 20000;
   bool _showSuccessOverlay = false;
 
   double _deliveryFee() =>
@@ -71,11 +71,16 @@ class _PaymentPageState extends State<PaymentPage> {
   @override
   Widget build(BuildContext context) {
     final cartProvider = context.watch<CartProvider>();
+    final availableCoins = context.watch<AppStateProvider>().coins.toDouble();
     final currency = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp',
       decimalDigits: 0,
     );
+
+    if (selectedCoins > availableCoins) {
+      selectedCoins = availableCoins;
+    }
 
     if (cartProvider.isEmpty) {
       return Scaffold(
@@ -104,6 +109,7 @@ class _PaymentPageState extends State<PaymentPage> {
     final orderTotal = cartProvider.totalPrice;
     final voucherDiscount = _voucherDiscount(orderTotal);
     final totalDue = _totalDue(orderTotal);
+    final int rewardCoins = (totalDue * 0.1).round();
 
     return Scaffold(
       appBar: AppBar(
@@ -434,6 +440,7 @@ class _PaymentPageState extends State<PaymentPage> {
                     voucherDiscount: voucherDiscount,
                     coinsDiscount: selectedCoins,
                     totalDue: totalDue,
+                    rewardCoins: rewardCoins,
                   ),
                   const SizedBox(height: 20),
                   SizedBox(
@@ -444,7 +451,7 @@ class _PaymentPageState extends State<PaymentPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color.fromARGB(255, 0, 96, 96),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         if (_showSuccessOverlay) return;
 
                         final historyEntry = PaymentHistoryEntry(
@@ -457,6 +464,47 @@ class _PaymentPageState extends State<PaymentPage> {
                           coinsUsed: selectedCoins,
                           date: DateTime.now(),
                         );
+
+                        final userId = context.read<AppStateProvider>().userId;
+                        if (userId != null) {
+                          final itemsList = cartProvider.items.values
+                              .map(
+                                (item) => {
+                                  'menuId': item.menuId,
+                                  'quantity': item.quantity,
+                                },
+                              )
+                              .toList();
+
+                          final result = await ApiService().savePaymentHistory(
+                            historyEntry,
+                            userId,
+                            coinsReward: rewardCoins,
+                            items: itemsList,
+                          );
+                          if (result['status'] == 'success') {
+                            if (result['coins'] != null) {
+                              final updatedCoins =
+                                  int.tryParse(result['coins'].toString()) ??
+                                  (context.read<AppStateProvider>().coins -
+                                      selectedCoins.toInt() +
+                                      rewardCoins);
+                              context.read<AppStateProvider>().coins =
+                                  updatedCoins;
+                            }
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  result['message'] ??
+                                      'Payment history failed to save',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+                        }
 
                         cartProvider.addHistory(historyEntry);
 
@@ -503,7 +551,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 'animation/Payment_Success.json',
                 width: 200,
                 height: 200,
-                repeat: false,
+                repeat: true,
               ),
               const SizedBox(height: 24),
 
@@ -595,6 +643,7 @@ class _PaymentPageState extends State<PaymentPage> {
     required double voucherDiscount,
     required double coinsDiscount,
     required double totalDue,
+    required int rewardCoins,
   }) {
     return Card(
       elevation: 0,
@@ -620,11 +669,30 @@ class _PaymentPageState extends State<PaymentPage> {
             _buildLine('Delivery fee', currency.format(deliveryFee)),
             _buildLine('Packaging fee', currency.format(packagingFee)),
             _buildLine('App fee', currency.format(appFee)),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+              decoration: BoxDecoration(
+                color: AppColors.cream,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'You will get $rewardCoins coins for this purchase',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.stormyTeal,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             _buildLine(
               'Voucher discount',
               '- ${currency.format(voucherDiscount)}',
             ),
             _buildLine('Coins discount', '- ${currency.format(coinsDiscount)}'),
+            const SizedBox(height: 12),
             const Divider(height: 28, thickness: 1.1),
             _buildLine('Total', currency.format(totalDue), isBold: true),
           ],
