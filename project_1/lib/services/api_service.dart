@@ -4,7 +4,7 @@ import 'package:project_1/models/menu_model.dart';
 import '../models/bakery_model.dart';
 
 class ApiService {
-  static const String _baseUrl = 'http://192.168.1.102:3000/api';
+  static const String _baseUrl = 'http://10.20.138.235:3000/api';
 
   Future<List<Bakery>> fetchBakeries() async {
     try {

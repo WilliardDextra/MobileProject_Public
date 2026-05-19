@@ -89,6 +89,12 @@ flutter:
     - images/F_CheesePuff.png
     - images/F_CinnamonRoll.png
     - images/F_HoneyMilkBun.png
+    - images/F_CrunchyBeefTaco.png
+    - images/F_ChickenQuesadilla.png
+    - images/F_EloteCornCups.png
+    - images/F_CheesyBeefBurrito.png
+    - images/F_LoadedNachosGrande.png
+    - images/F_CinnamonChurros.png
     - animation/BackgroundMain.json
     - animation/BackgroundMain2.json
     - animation/BackgroundMain2.2.json
@@ -96,6 +102,7 @@ flutter:
     - animation/SparkleBackground.json
     - animation/BackgroundBox.json
     - animation/ScrollAnimation.json
+    - animation/Payment_Success.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

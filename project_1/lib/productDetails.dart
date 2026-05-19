@@ -123,7 +123,6 @@ class _DetailPageState extends State<DetailPage> {
                           );
                         }
 
-                        // Tampilkan list menu dari database
                         return Column(
                           children: snapshot.data!.map((menu) {
                             return MenuCard(

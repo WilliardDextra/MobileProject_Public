@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:project_1/models/cart_item.dart';
 import 'package:project_1/models/menu_model.dart';
 import 'package:project_1/models/bakery_model.dart';
+import 'package:project_1/models/payment_history.dart';
 
 class CartProvider extends ChangeNotifier {
   final Map<int, CartItem> _items = {};
+  final List<PaymentHistoryEntry> _history = [];
   Bakery? _bakery;
 
   Map<int, CartItem> get items => _items;
@@ -18,6 +20,8 @@ class CartProvider extends ChangeNotifier {
   double get totalPrice =>
       _items.values.fold(0, (sum, item) => sum + item.totalPrice);
 
+  List<PaymentHistoryEntry> get history => List.unmodifiable(_history);
+
   bool get isEmpty => _items.isEmpty;
 
   bool isSameRestaurant(int bakeryId) {
@@ -27,6 +31,11 @@ class CartProvider extends ChangeNotifier {
   void clearCart() {
     _items.clear();
     _bakery = null;
+    notifyListeners();
+  }
+
+  void addHistory(PaymentHistoryEntry entry) {
+    _history.add(entry);
     notifyListeners();
   }
 

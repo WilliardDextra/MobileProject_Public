@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:project_1/colorPallette.dart';
 import 'package:project_1/main.dart';
+import 'package:project_1/providers/app_state_provider.dart';
 import 'package:project_1/register_page.dart';
 import 'package:project_1/services/api_service.dart';
 
@@ -24,6 +26,10 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     if (result['status'] == "success") {
+      final userName = result['data']?['nama'] as String? ?? '';
+      if (userName.isNotEmpty) {
+        context.read<AppStateProvider>().userName = userName;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Welcome Back!'),

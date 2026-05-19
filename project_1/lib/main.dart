@@ -1,13 +1,16 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:project_1/register_page.dart';
+import 'package:project_1/models/payment_history.dart';
+import 'package:project_1/providers/app_state_provider.dart';
+import 'package:project_1/providers/cart_provider.dart';
 import 'package:provider/provider.dart';
 import 'colorPallette.dart';
 import 'search.dart';
 import 'cart.dart';
-import 'providers/cart_provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,8 +21,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => CartProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => AppStateProvider()),
+      ],
       child: MaterialApp(
         theme: ThemeData(
           scaffoldBackgroundColor: Colors.white,
@@ -30,7 +36,7 @@ class MyApp extends StatelessWidget {
         ),
 
         debugShowCheckedModeBanner: false,
-        home: const MyHomePage(),
+        home: const RegisterPage(),
       ),
     );
   }
@@ -44,18 +50,19 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _selectedIndex = 2;
-
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    context.read<AppStateProvider>().selectedIndex = index;
   }
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppStateProvider>();
+    final selectedIndex = appState.selectedIndex;
+    final userName = appState.userName;
+    final cartProvider = context.watch<CartProvider>();
+
     final List<Widget> pages = [
-      const Center(child: Text("Status Page")),
+      _buildStatusPage(cartProvider.history),
       const SearchPage(),
       _buildLandingPage(),
       CartPage(),
@@ -114,11 +121,11 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
 
-      body: IndexedStack(index: _selectedIndex, children: pages),
+      body: IndexedStack(index: selectedIndex, children: pages),
 
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
+        currentIndex: selectedIndex,
         onTap: _onItemTapped,
         selectedItemColor: const Color.fromARGB(255, 0, 96, 96),
         unselectedItemColor: Colors.grey,
@@ -136,6 +143,72 @@ class _MyHomePageState extends State<MyHomePage> {
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Account'),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatusPage(List<PaymentHistoryEntry> history) {
+    if (history.isEmpty) {
+      return const Center(
+        child: Text(
+          'No payment history yet.',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: history.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final entry = history[index];
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(20),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                entry.restaurantName,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                DateFormat('dd MMM yyyy, HH:mm').format(entry.date),
+                style: const TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 12),
+              Text('Service: ${entry.serviceType}'),
+              const SizedBox(height: 4),
+              Text('Payment: ${entry.paymentMethod}'),
+              const SizedBox(height: 4),
+              Text('Items: ${entry.itemCount}'),
+              const SizedBox(height: 4),
+              Text('Voucher: ${entry.voucher}'),
+              const SizedBox(height: 4),
+              Text('Coins used: Rp${entry.coinsUsed.toStringAsFixed(0)}'),
+              const Divider(height: 20),
+              Text(
+                'Total: Rp${entry.totalAmount.toStringAsFixed(0)}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -253,7 +326,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         children: [
                           SizedBox(height: 10),
                           Text(
-                            "Welcome Back User",
+                            "Welcome Back ${context.watch<AppStateProvider>().userName.isEmpty ? 'Guest' : context.watch<AppStateProvider>().userName}",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
@@ -360,7 +433,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 ),
                               ),
                               Text(
-                                "3.560",
+                                "20.000",
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.stormyTeal,

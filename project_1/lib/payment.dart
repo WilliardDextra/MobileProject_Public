@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 import 'package:project_1/colorPallette.dart';
-import 'package:project_1/models/menu_model.dart';
-import 'package:project_1/services/api_service.dart';
+import 'package:project_1/models/payment_history.dart';
 import 'package:provider/provider.dart';
 import 'package:project_1/models/cart_item.dart';
+import 'package:project_1/providers/app_state_provider.dart';
 import 'package:project_1/providers/cart_provider.dart';
 
 enum ServiceType { delivery, pickUp }
@@ -32,6 +33,7 @@ class _PaymentPageState extends State<PaymentPage> {
   String selectedVoucher = 'None';
   double selectedCoins = 0;
   final double availableCoins = 20000;
+  bool _showSuccessOverlay = false;
 
   double _deliveryFee() =>
       widget.serviceType == ServiceType.delivery ? 15000 : 0;
@@ -132,323 +134,393 @@ class _PaymentPageState extends State<PaymentPage> {
           ],
         ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Order Summary',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 14),
-
-              Container(
-                padding: const EdgeInsets.all(4.0),
-                decoration: BoxDecoration(
-                  color: AppColors.cream,
-                  border: Border.all(
-                    width: 0.5,
-                    color: const Color.fromARGB(255, 137, 137, 137),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Order Summary',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color.fromARGB(255, 0, 0, 0).withAlpha(100),
-                      spreadRadius: 2,
-                      blurRadius: 4,
-                      offset: const Offset(3, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ...cartProvider.items.values
-                        .map((item) => _buildOrderItem(item, currency))
-                        .toList(),
-                  ],
-                ),
-              ),
+                  const SizedBox(height: 14),
 
-              const SizedBox(height: 18),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(150),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Text(
-                        'Service',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  Container(
+                    padding: const EdgeInsets.all(4.0),
+                    decoration: BoxDecoration(
+                      color: AppColors.cream,
+                      border: Border.all(
+                        width: 0.5,
+                        color: const Color.fromARGB(255, 137, 137, 137),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-
-                    Text(
-                      'Type: ${_serviceLabel()}',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-
-                    SizedBox(height: 6),
-
-                    Text(
-                      widget.serviceType == ServiceType.delivery
-                          ? 'Delivery with additional delivery fee.'
-                          : 'Pick Up with estimated walking distance and duration.',
-                      style: const TextStyle(
-                        color: Colors.black54,
-                        fontSize: 13,
-                      ),
-                    ),
-
-                    const SizedBox(height: 6),
-                    if (widget.serviceType == ServiceType.pickUp)
-                      Text(
-                        'Estimate: ${_pickupEstimate()}',
-                        style: const TextStyle(color: Colors.black87),
-                      ),
-                    if (widget.serviceType == ServiceType.delivery)
-                      const Text(
-                        'Delivery fee will be added.',
-                        style: TextStyle(color: Colors.black87),
-                      ),
-
-                    SizedBox(height: 8),
-
-                    const Divider(
-                      color: Color.fromARGB(255, 0, 0, 0),
-                      thickness: 1.5,
-                      indent: 5,
-                      endIndent: 5,
-                    ),
-
-                    SizedBox(height: 10),
-
-                    Center(
-                      child: Text(
-                        'Payment Method',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    Text('Choose how to pay for your order.'),
-
-                    const SizedBox(height: 8),
-
-                    DropdownButtonFormField<String>(
-                      dropdownColor: AppColors.stormyTeal,
-                      value: selectedPaymentMethod,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.stormyTeal,
-                            width: 1.5,
-                          ),
-                        ),
-
-                        filled: true,
-                        fillColor: AppColors.stormyTeal,
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      items: paymentMethods
-                          .map(
-                            (method) => DropdownMenuItem(
-                              value: method,
-                              child: Text(
-                                method,
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setState(() => selectedPaymentMethod = value);
-                      },
-                    ),
-
-                    SizedBox(height: 8),
-
-                    const Divider(
-                      color: Color.fromARGB(255, 0, 0, 0),
-                      thickness: 1.5,
-                      indent: 5,
-                      endIndent: 5,
-                    ),
-
-                    SizedBox(height: 10),
-
-                    Center(
-                      child: Text(
-                        'Voucher',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: 8),
-
-                    Text('Apply your voucher for extra savings'),
-
-                    SizedBox(height: 8),
-
-                    DropdownButtonFormField<String>(
-                      dropdownColor: AppColors.stormyTeal,
-                      value: selectedVoucher,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.stormyTeal,
-                            width: 1.5,
-                          ),
-                        ),
-
-                        filled: true,
-                        fillColor: AppColors.stormyTeal,
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-
-                      items: voucherOptions
-                          .map(
-                            (voucher) => DropdownMenuItem(
-                              value: voucher,
-                              child: Text(
-                                voucher,
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setState(() => selectedVoucher = value);
-                      },
-                    ),
-
-                    SizedBox(height: 8),
-
-                    const Divider(
-                      color: Color.fromARGB(255, 0, 0, 0),
-                      thickness: 1.5,
-                      indent: 5,
-                      endIndent: 5,
-                    ),
-
-                    SizedBox(height: 10),
-
-                    Center(
-                      child: Text(
-                        'Coins',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: 8),
-
-                    Text('Take your savings to the next level eith Coins'),
-
-                    SizedBox(height: 8),
-
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Slider(
-                          value: selectedCoins,
-                          min: 0,
-                          max: availableCoins,
-                          divisions: 10,
-                          label: currency.format(selectedCoins),
-                          activeColor: AppColors.tigerFlame,
-                          onChanged: (value) {
-                            setState(() {
-                              selectedCoins = value;
-                            });
-                          },
-                        ),
-                        Text('Available: ${currency.format(availableCoins)}'),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Applied coins: ${currency.format(selectedCoins)}',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color.fromARGB(
+                            255,
+                            0,
+                            0,
+                            0,
+                          ).withAlpha(100),
+                          spreadRadius: 2,
+                          blurRadius: 4,
+                          offset: const Offset(3, 3),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              _buildSummaryCard(
-                currency: currency,
-                orderTotal: orderTotal,
-                deliveryFee: _deliveryFee(),
-                packagingFee: _packagingFee(),
-                appFee: _appFee(),
-                voucherDiscount: voucherDiscount,
-                coinsDiscount: selectedCoins,
-                totalDue: totalDue,
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 0, 96, 96),
-                  ),
-                  onPressed: () {
-                    cartProvider.clearCart();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Payment successful. Order completed.'),
-                      ),
-                    );
-                    Navigator.pop(context);
-                  },
-                  child: const Text(
-                    'Pay Now',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.tigerFlame,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ...cartProvider.items.values
+                            .map((item) => _buildOrderItem(item, currency))
+                            .toList(),
+                      ],
                     ),
                   ),
+
+                  const SizedBox(height: 18),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(150),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Text(
+                            'Service',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+
+                        Text(
+                          'Type: ${_serviceLabel()}',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+
+                        SizedBox(height: 6),
+
+                        Text(
+                          widget.serviceType == ServiceType.delivery
+                              ? 'Delivery with additional delivery fee.'
+                              : 'Pick Up with estimated walking distance and duration.',
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 13,
+                          ),
+                        ),
+
+                        const SizedBox(height: 6),
+                        if (widget.serviceType == ServiceType.pickUp)
+                          Text(
+                            'Estimate: ${_pickupEstimate()}',
+                            style: const TextStyle(color: Colors.black87),
+                          ),
+                        if (widget.serviceType == ServiceType.delivery)
+                          const Text(
+                            'Delivery fee will be added.',
+                            style: TextStyle(color: Colors.black87),
+                          ),
+
+                        SizedBox(height: 8),
+
+                        const Divider(
+                          color: Color.fromARGB(255, 0, 0, 0),
+                          thickness: 1.5,
+                          indent: 5,
+                          endIndent: 5,
+                        ),
+
+                        SizedBox(height: 10),
+
+                        Center(
+                          child: Text(
+                            'Payment Method',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        Text('Choose how to pay for your order.'),
+
+                        const SizedBox(height: 8),
+
+                        DropdownButtonFormField<String>(
+                          dropdownColor: AppColors.stormyTeal,
+                          value: selectedPaymentMethod,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: AppColors.stormyTeal,
+                                width: 1.5,
+                              ),
+                            ),
+
+                            filled: true,
+                            fillColor: AppColors.stormyTeal,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          items: paymentMethods
+                              .map(
+                                (method) => DropdownMenuItem(
+                                  value: method,
+                                  child: Text(
+                                    method,
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() => selectedPaymentMethod = value);
+                          },
+                        ),
+
+                        SizedBox(height: 8),
+
+                        const Divider(
+                          color: Color.fromARGB(255, 0, 0, 0),
+                          thickness: 1.5,
+                          indent: 5,
+                          endIndent: 5,
+                        ),
+
+                        SizedBox(height: 10),
+
+                        Center(
+                          child: Text(
+                            'Voucher',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(height: 8),
+
+                        Text('Apply your voucher for extra savings'),
+
+                        SizedBox(height: 8),
+
+                        DropdownButtonFormField<String>(
+                          dropdownColor: AppColors.stormyTeal,
+                          value: selectedVoucher,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: AppColors.stormyTeal,
+                                width: 1.5,
+                              ),
+                            ),
+
+                            filled: true,
+                            fillColor: AppColors.stormyTeal,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+
+                          items: voucherOptions
+                              .map(
+                                (voucher) => DropdownMenuItem(
+                                  value: voucher,
+                                  child: Text(
+                                    voucher,
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() => selectedVoucher = value);
+                          },
+                        ),
+
+                        SizedBox(height: 8),
+
+                        const Divider(
+                          color: Color.fromARGB(255, 0, 0, 0),
+                          thickness: 1.5,
+                          indent: 5,
+                          endIndent: 5,
+                        ),
+
+                        SizedBox(height: 10),
+
+                        Center(
+                          child: Text(
+                            'Coins',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(height: 8),
+
+                        Text('Take your savings to the next level eith Coins'),
+
+                        SizedBox(height: 8),
+
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Slider(
+                              value: selectedCoins,
+                              min: 0,
+                              max: availableCoins,
+                              divisions: 10,
+                              label: currency.format(selectedCoins),
+                              activeColor: AppColors.tigerFlame,
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedCoins = value;
+                                });
+                              },
+                            ),
+                            Text(
+                              'Available: ${currency.format(availableCoins)}',
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Applied coins: ${currency.format(selectedCoins)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  _buildSummaryCard(
+                    currency: currency,
+                    orderTotal: orderTotal,
+                    deliveryFee: _deliveryFee(),
+                    packagingFee: _packagingFee(),
+                    appFee: _appFee(),
+                    voucherDiscount: voucherDiscount,
+                    coinsDiscount: selectedCoins,
+                    totalDue: totalDue,
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 0, 96, 96),
+                      ),
+                      onPressed: () {
+                        if (_showSuccessOverlay) return;
+
+                        final historyEntry = PaymentHistoryEntry(
+                          restaurantName: cartProvider.bakeryName ?? 'Unknown',
+                          itemCount: cartProvider.totalItems,
+                          totalAmount: totalDue,
+                          paymentMethod: selectedPaymentMethod,
+                          serviceType: _serviceLabel(),
+                          voucher: selectedVoucher,
+                          coinsUsed: selectedCoins,
+                          date: DateTime.now(),
+                        );
+
+                        cartProvider.addHistory(historyEntry);
+
+                        setState(() {
+                          _showSuccessOverlay = true;
+                        });
+
+                        Future.delayed(const Duration(seconds: 4), () {
+                          if (!mounted) return;
+                          cartProvider.clearCart();
+                          context.read<AppStateProvider>().selectedIndex = 0;
+                          Navigator.popUntil(context, (route) => route.isFirst);
+                        });
+                      },
+                      child: const Text(
+                        'Pay Now',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.tigerFlame,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_showSuccessOverlay) _buildSuccessOverlay(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuccessOverlay() {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black54,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Lottie.asset(
+                'animation/Payment_Success.json',
+                width: 200,
+                height: 200,
+                repeat: false,
+              ),
+              const SizedBox(height: 24),
+
+              const Text(
+                'Payment Success',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Your payment has been processed successfully.',
+                style: TextStyle(color: Colors.white70, fontSize: 16),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
