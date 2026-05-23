@@ -1,5 +1,6 @@
 class Bakery {
   final int id;
+  final int? userId; // merchant/owner ID
   final String name;
   final String image;
   final double rating;
@@ -10,6 +11,7 @@ class Bakery {
 
   Bakery({
     required this.id,
+    this.userId,
     required this.name,
     required this.image,
     required this.rating,
@@ -22,6 +24,9 @@ class Bakery {
   factory Bakery.fromJson(Map<String, dynamic> json) {
     return Bakery(
       id: json['id'],
+      userId: json['user_id'] != null
+          ? int.tryParse(json['user_id'].toString())
+          : null,
       name: json['name'],
       image: json['image'],
       rating: double.parse(json['rating'].toString()),
@@ -35,6 +40,7 @@ class Bakery {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      if (userId != null) 'user_id': userId,
       'name': name,
       'image': image,
       'rating': rating,

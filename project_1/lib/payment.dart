@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:project_1/colorPallette.dart';
 import 'package:project_1/models/payment_history.dart';
+import 'package:project_1/models/order_model.dart';
+import 'package:project_1/order_status_page.dart';
 import 'package:project_1/providers/app_state_provider.dart';
 import 'package:project_1/providers/cart_provider.dart';
 import 'package:project_1/services/api_service.dart';
@@ -466,6 +468,8 @@ class _PaymentPageState extends State<PaymentPage> {
                         );
 
                         final userId = context.read<AppStateProvider>().userId;
+                        final merchantId = cartProvider.merchantId ?? 0;
+
                         if (userId != null) {
                           final itemsList = cartProvider.items.values
                               .map(
@@ -482,6 +486,9 @@ class _PaymentPageState extends State<PaymentPage> {
                             coinsReward: rewardCoins,
                             items: itemsList,
                           );
+
+                          if (!mounted) return;
+
                           if (result['status'] == 'success') {
                             if (result['coins'] != null) {
                               final updatedCoins =
@@ -491,6 +498,79 @@ class _PaymentPageState extends State<PaymentPage> {
                                       rewardCoins);
                               context.read<AppStateProvider>().coins =
                                   updatedCoins;
+                            }
+
+                            // Create order record
+                            final orderItems = cartProvider.items.values
+                                .map(
+                                  (item) => OrderItem(
+                                    menuId: item.menuId,
+                                    menuName: item.name,
+                                    price: item.price,
+                                    quantity: item.quantity,
+                                    image: item.image,
+                                  ),
+                                )
+                                .toList();
+
+                            final order = Order(
+                              userId: userId,
+                              merchantId: merchantId,
+                              merchantName:
+                                  cartProvider.bakeryName ?? 'Unknown',
+                              serviceType:
+                                  widget.serviceType == ServiceType.delivery
+                                  ? 'delivery'
+                                  : 'pickUp',
+                              items: orderItems,
+                              subtotal: orderTotal,
+                              deliveryFee: _deliveryFee(),
+                              packagingFee: _packagingFee(),
+                              appFee: _appFee(),
+                              discount: voucherDiscount,
+                              coinsUsed: selectedCoins,
+                              totalAmount: totalDue,
+                              paymentMethod: selectedPaymentMethod,
+                              voucher: selectedVoucher,
+                              status: OrderStatus.preparing,
+                              createdAt: DateTime.now(),
+                            );
+
+                            final orderResult = await ApiService().createOrder(
+                              order,
+                            );
+
+                            if (!mounted) return;
+
+                            if (orderResult['status'] == 'success') {
+                              final orderId = orderResult['orderId'];
+
+                              cartProvider.addHistory(historyEntry);
+                              setState(() {
+                                _showSuccessOverlay = true;
+                              });
+
+                              Future.delayed(const Duration(seconds: 4), () {
+                                if (!mounted) return;
+                                cartProvider.clearCart();
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        OrderStatusPage(orderId: orderId),
+                                  ),
+                                );
+                              });
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    orderResult['message'] ??
+                                        'Failed to create order',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
                             }
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -505,19 +585,6 @@ class _PaymentPageState extends State<PaymentPage> {
                             return;
                           }
                         }
-
-                        cartProvider.addHistory(historyEntry);
-
-                        setState(() {
-                          _showSuccessOverlay = true;
-                        });
-
-                        Future.delayed(const Duration(seconds: 4), () {
-                          if (!mounted) return;
-                          cartProvider.clearCart();
-                          context.read<AppStateProvider>().selectedIndex = 0;
-                          Navigator.popUntil(context, (route) => route.isFirst);
-                        });
                       },
                       child: const Text(
                         'Pay Now',

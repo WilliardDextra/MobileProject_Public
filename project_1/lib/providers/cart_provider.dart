@@ -12,6 +12,7 @@ class CartProvider extends ChangeNotifier {
   Map<int, CartItem> get items => _items;
   Bakery? get bakery => _bakery;
   int? get bakeryId => _bakery?.id;
+  int? get merchantId => _bakery?.userId;
   String? get bakeryName => _bakery?.name;
   double? get bakeryDistance => _bakery?.distance;
 

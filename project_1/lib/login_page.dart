@@ -19,11 +19,20 @@ class _LoginPageState extends State<LoginPage> {
 
   bool isConsumer = true;
 
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
   void _handleLogin() async {
     final result = await ApiService().loginUser(
       emailController.text,
       passwordController.text,
     );
+
+    if (!mounted) return;
 
     if (result['status'] == "success") {
       final userName = result['data']?['nama'] as String? ?? '';

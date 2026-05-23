@@ -8,6 +8,7 @@ class AppStateProvider extends ChangeNotifier {
   String _address = '';
   String _role = '';
   int? _userId;
+  int? _merchantId;
   int _coins = 0;
 
   int get selectedIndex => _selectedIndex;
@@ -17,6 +18,7 @@ class AppStateProvider extends ChangeNotifier {
   String get address => _address;
   String get role => _role;
   int? get userId => _userId;
+  int? get merchantId => _merchantId;
   int get coins => _coins;
 
   set selectedIndex(int value) {
@@ -58,6 +60,12 @@ class AppStateProvider extends ChangeNotifier {
   set userId(int? value) {
     if (_userId == value) return;
     _userId = value;
+    notifyListeners();
+  }
+
+  set merchantId(int? value) {
+    if (_merchantId == value) return;
+    _merchantId = value;
     notifyListeners();
   }
 

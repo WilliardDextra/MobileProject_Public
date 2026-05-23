@@ -13,6 +13,8 @@ import 'package:provider/provider.dart';
 import 'colorPallette.dart';
 import 'search.dart';
 import 'cart.dart';
+import 'merchant_orders_page.dart';
+import 'merchant_menu_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -81,13 +83,31 @@ class _MyHomePageState extends State<MyHomePage> {
     final selectedIndex = appState.selectedIndex;
     final cartProvider = context.watch<CartProvider>();
 
-    final List<Widget> pages = [
-      _buildStatusPage(cartProvider.history),
-      const SearchPage(),
-      _buildLandingPage(),
-      CartPage(),
-      const AccountPage(),
-    ];
+    // Build pages & navigation depending on role
+    final isMerchant = appState.role.toLowerCase() == 'merchant';
+
+    final List<Widget> pages = isMerchant
+        ? [
+            const MerchantOrdersPage(),
+            const MerchantMenuPage(),
+            const AccountPage(),
+          ]
+        : [
+            _buildStatusPage(cartProvider.history),
+            const SearchPage(),
+            _buildLandingPage(),
+            CartPage(),
+            const AccountPage(),
+          ];
+
+    // Ensure selectedIndex is within bounds
+    int currentIndex = selectedIndex;
+    if (currentIndex >= pages.length) {
+      currentIndex = 0;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<AppStateProvider>().selectedIndex = 0;
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -141,27 +161,48 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
 
-      body: IndexedStack(index: selectedIndex, children: pages),
+      body: IndexedStack(index: currentIndex, children: pages),
 
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: selectedIndex,
+        currentIndex: currentIndex,
         onTap: _onItemTapped,
         selectedItemColor: const Color.fromARGB(255, 0, 96, 96),
         unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long),
-            label: 'Status',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: 'Cart',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Account'),
-        ],
+        items: isMerchant
+            ? const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.list),
+                  label: 'Orders',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.restaurant_menu),
+                  label: 'Menu',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person),
+                  label: 'Account',
+                ),
+              ]
+            : const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.receipt_long),
+                  label: 'Status',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.search),
+                  label: 'Search',
+                ),
+                BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.shopping_cart),
+                  label: 'Cart',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person),
+                  label: 'Account',
+                ),
+              ],
       ),
     );
   }

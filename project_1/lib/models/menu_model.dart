@@ -8,6 +8,7 @@ class Menu {
   final double fRating;
   final int fSold;
   final int fStock;
+  final int? isActive;
 
   Menu({
     required this.id,
@@ -19,6 +20,7 @@ class Menu {
     required this.fRating,
     required this.fSold,
     required this.fStock,
+    required this.isActive,
   });
 
   factory Menu.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,7 @@ class Menu {
       fRating: double.parse((json['f_rating'] ?? 0.0).toString()),
       fSold: json['f_sold'] ?? 0,
       fStock: json['f_stock'] ?? 0,
+      isActive: json['is_active'] ?? 1,
     );
   }
 }
