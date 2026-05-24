@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 import 'package:project_1/colorPallette.dart';
 import 'package:project_1/models/order_model.dart';
 import 'package:project_1/services/api_service.dart';
+import 'package:project_1/order_history_page.dart';
 
 class OrderStatusPage extends StatefulWidget {
   final int orderId;
@@ -16,15 +18,31 @@ class OrderStatusPage extends StatefulWidget {
 class _OrderStatusPageState extends State<OrderStatusPage> {
   late Future<Order?> _orderFuture;
   Order? _currentOrder;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _loadOrder();
+    // Set up periodic refresh - updates every 10 seconds
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) {
+        _loadOrder();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   void _loadOrder() {
     _orderFuture = ApiService().fetchOrder(widget.orderId);
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _completeOrder() async {
@@ -74,6 +92,23 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
         ),
         backgroundColor: AppColors.stormyTeal,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh Status',
+            onPressed: () {
+              setState(() {
+                _loadOrder();
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Updating order status...'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: FutureBuilder<Order?>(
         future: _orderFuture,
@@ -89,147 +124,230 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
           _currentOrder = snapshot.data!;
           final order = _currentOrder!;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // --- Status Timeline ---
-                _buildStatusTimeline(order),
-                const SizedBox(height: 24),
+          return RefreshIndicator(
+            onRefresh: () async {
+              setState(() {
+                _loadOrder();
+              });
+              // Wait for the future to complete
+              await _orderFuture;
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildStatusTimeline(order),
+                  const SizedBox(height: 24),
 
-                // --- Order Details Card ---
-                _buildOrderDetailsCard(order, currency),
-                const SizedBox(height: 16),
+                  _buildOrderDetailsCard(order, currency),
+                  const SizedBox(height: 16),
 
-                // --- Order Items ---
-                _buildOrderItemsSection(order),
-                const SizedBox(height: 16),
+                  _buildOrderItemsSection(order),
+                  const SizedBox(height: 16),
 
-                // --- Payment Summary ---
-                _buildPaymentSummary(order, currency),
-                const SizedBox(height: 28),
+                  _buildPaymentSummary(order, currency),
+                  const SizedBox(height: 28),
 
-                // --- DYNAMIC BUTTONS SECTION ---
-                if (order.status == OrderStatus.onDelivery ||
-                    order.status == OrderStatus.readyToPickUp)
-                  SizedBox(
-                    width: double.infinity,
-                    height:
-                        52, // Ditinggikan sedikit agar lebih ergonomis untuk ditekan
-                    child: ElevatedButton(
-                      onPressed: _completeOrder,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.stormyTeal,
-                        foregroundColor: Colors.white,
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            16,
-                          ), // Kelengkungan sudut modern
+                  if (order.status == OrderStatus.onDelivery ||
+                      order.status == OrderStatus.readyToPickUp)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: _completeOrder,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.stormyTeal,
+                          foregroundColor: Colors.white,
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.check_circle_outline_rounded, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'I Have Received My Order',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else if (order.status == OrderStatus.preparing)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 20,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.cream,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.tigerFlame.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                AppColors.tigerFlame,
+                              ),
+                              strokeWidth: 2.5,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Text(
+                              'Waiting for merchant to finish preparing',
+                              style: TextStyle(
+                                color: AppColors.tigerFlame,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 20,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.green.shade200,
+                          width: 1,
                         ),
                       ),
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.check_circle_outline_rounded, size: 20),
-                          SizedBox(width: 8),
+                          Icon(
+                            Icons.stars_rounded,
+                            color: Colors.green,
+                            size: 22,
+                          ),
+                          SizedBox(width: 10),
                           Text(
-                            'I Have Received My Order',
+                            'Order Completed',
                             style: TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.w700,
                               fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.3,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  )
-                else if (order.status == OrderStatus.preparing)
+                  const SizedBox(height: 24),
+
+                  // Navigation Buttons Section
                   Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 20,
-                    ),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors
-                          .cream, // Menggunakan warna palet cream dasar Anda
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: AppColors.tigerFlame.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.tigerFlame,
-                            ),
-                            strokeWidth: 2.5,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Text(
-                            'Waiting for merchant to finish preparing',
-                            style: TextStyle(
-                              color: AppColors
-                                  .tigerFlame, // Memakai warna aksen utama Anda
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
-                          ),
+                      border: Border.all(color: Colors.grey.shade100),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                  )
-                else
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 20,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(
-                        0xFFE8F5E9,
-                      ), // Lembutnya warna hijau sukses
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.green.shade200,
-                        width: 1,
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Icon(
-                          Icons.stars_rounded,
-                          color: Colors.green,
-                          size: 22,
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const OrderHistoryPage(isMerchant: false),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.stormyTeal,
+                            foregroundColor: Colors.white,
+                            elevation: 2,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(Icons.history, size: 20),
+                          label: const Text(
+                            'View All Orders',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
                         ),
-                        SizedBox(width: 10),
-                        Text(
-                          'Order Completed',
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
-                            letterSpacing: 0.5,
+                        const SizedBox(height: 10),
+
+                        // Continue Shopping Button
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.of(
+                              context,
+                            ).popUntil((route) => route.isFirst);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.stormyTeal,
+                            side: const BorderSide(
+                              color: AppColors.stormyTeal,
+                              width: 1.5,
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(
+                            Icons.shopping_bag_outlined,
+                            size: 20,
+                          ),
+                          label: const Text(
+                            'Continue Shopping',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                const SizedBox(height: 24),
-              ],
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           );
         },
@@ -284,7 +402,6 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
           ),
           const SizedBox(height: 20),
 
-          // --- TIMELINE ROW ---
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -300,14 +417,11 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
                   verticalDirection: VerticalDirection.down,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // --- INDIVIDUAL STATUS NODE ---
                     SizedBox(
-                      width:
-                          85, // Memberikan fixed width yang aman agar teks 2 baris tidak saling tabrakan
+                      width: 85,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Lingkaran Status
                           AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
                             width: 36,
@@ -357,7 +471,6 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
                           ),
                           const SizedBox(height: 10),
 
-                          // Label Teks Status
                           Text(
                             status.displayName,
                             textAlign: TextAlign.center,
@@ -380,16 +493,13 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
                       ),
                     ),
 
-                    // --- GARIS PENGHUBUNG (CONNECTOR) ---
                     if (!isLast)
                       Padding(
-                        padding: const EdgeInsets.only(
-                          top: 17,
-                        ), // Mengatur posisi vertikal garis di tengah lingkaran
+                        padding: const EdgeInsets.only(top: 17),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
-                          width: 40, // Panjang garis antar status
-                          height: 3, // Ketebalan garis
+                          width: 40,
+                          height: 3,
                           color: isCompleted
                               ? AppColors.stormyTeal
                               : Colors.grey.shade200,
@@ -426,7 +536,6 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- HEADER CARD (ORDER ID) ---
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -529,7 +638,6 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
             ),
             const SizedBox(height: 12),
 
-            // --- INFORMASI TANGGAL ORDER ---
             Row(
               children: [
                 Icon(
@@ -649,7 +757,6 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- TITLE SECTION ---
             const Row(
               children: [
                 Icon(
@@ -670,7 +777,6 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
             ),
             const SizedBox(height: 16),
 
-            // --- LIST OF ITEMS ---
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -685,7 +791,6 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
 
                 return Row(
                   children: [
-                    // --- MINI IMAGE CONTAINER (ASSET ONLY WITH WINDOW SHADOW) ---
                     Container(
                       width: 50,
                       height: 50,
@@ -721,7 +826,6 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
                     ),
                     const SizedBox(width: 14),
 
-                    // --- ITEM DETAILS ---
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -741,14 +845,13 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              // Multiplier Badge
+
                               Text(
                                 'x${item.quantity}',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
-                                  color: AppColors
-                                      .tigerFlame, // Menonjolkan jumlah belanjaan
+                                  color: AppColors.tigerFlame,
                                 ),
                               ),
                             ],
@@ -767,7 +870,6 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
                     ),
                     const SizedBox(width: 16),
 
-                    // --- TOTAL PRICE PER ITEM TYPE ---
                     Text(
                       'Rp${totalItemPrice.toStringAsFixed(0)}',
                       style: const TextStyle(
@@ -805,7 +907,6 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- TITLE SECTION ---
             const Row(
               children: [
                 Icon(
@@ -826,7 +927,6 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
             ),
             const SizedBox(height: 16),
 
-            // --- BILL DETAILS ---
             _buildSummaryRow('Subtotal', currency.format(order.subtotal)),
 
             if (order.deliveryFee > 0) ...[
@@ -846,7 +946,6 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
             const SizedBox(height: 10),
             _buildSummaryRow('App Fee', currency.format(order.appFee)),
 
-            // --- DEDUCTION ITEMS (DISCOUNT / COINS) ---
             if (order.discount > 0) ...[
               const SizedBox(height: 10),
               _buildSummaryRow(
@@ -870,7 +969,6 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
               child: Divider(color: Colors.grey.shade100, height: 1),
             ),
 
-            // --- TOTAL AMOUNT ---
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -887,8 +985,7 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 18,
-                    color: AppColors
-                        .tigerFlame, // Menyoroti total akhir dengan warna aksen api Anda
+                    color: AppColors.tigerFlame,
                   ),
                 ),
               ],

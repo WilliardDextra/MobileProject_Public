@@ -8,7 +8,7 @@ import 'package:project_1/providers/app_state_provider.dart';
 import 'package:project_1/services/api_service.dart';
 
 class OrderHistoryPage extends StatefulWidget {
-  final bool isMerchant; // true for merchant, false for customer
+  final bool isMerchant;
 
   const OrderHistoryPage({super.key, this.isMerchant = false});
 
@@ -50,7 +50,19 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Order History'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(width: 6),
+            const Text(
+              "Order History",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.tigerFlame,
+              ),
+            ),
+          ],
+        ),
         backgroundColor: AppColors.stormyTeal,
         foregroundColor: Colors.white,
       ),
@@ -65,9 +77,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
-          final orders = snapshot.data ?? [];
+          final allOrders = snapshot.data ?? [];
 
-          if (orders.isEmpty) {
+          if (allOrders.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -83,26 +95,117 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
             );
           }
 
+          final inProgressOrders = allOrders
+              .where((order) => order.status != OrderStatus.completed)
+              .toList();
+          final completedOrders = allOrders
+              .where((order) => order.status == OrderStatus.completed)
+              .toList();
+
           return RefreshIndicator(
             onRefresh: _refresh,
-            child: ListView.separated(
+            child: ListView(
               padding: const EdgeInsets.all(12),
-              itemCount: orders.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final order = orders[index];
-                return InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => OrderStatusPage(orderId: order.id!),
-                      ),
-                    );
-                  },
-                  child: _buildOrderCard(order, currency),
-                );
-              },
+              children: [
+                // In Progress Orders Section
+                if (inProgressOrders.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.hourglass_top_rounded,
+                          color: AppColors.tigerFlame,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'In Progress (${inProgressOrders.length})',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: inProgressOrders.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final order = inProgressOrders[index];
+                      return InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  OrderStatusPage(orderId: order.id!),
+                            ),
+                          );
+                        },
+                        child: _buildOrderCard(order, currency),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Completed Orders Section
+                if (completedOrders.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          color: Colors.green,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Completed (${completedOrders.length})',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: completedOrders.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final order = completedOrders[index];
+                      return InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  OrderStatusPage(orderId: order.id!),
+                            ),
+                          );
+                        },
+                        child: _buildOrderCard(order, currency),
+                      );
+                    },
+                  ),
+                ],
+              ],
             ),
           );
         },
@@ -111,17 +214,31 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   }
 
   Widget _buildOrderCard(Order order, NumberFormat currency) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    final bool isDelivery = order.serviceType == 'delivery';
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // --- HEADER: ORDER ID & DATE ---
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Column(
@@ -132,28 +249,33 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
+                          color: AppColors.stormyTeal,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        DateFormat('dd MMM yyyy').format(order.createdAt),
-                        style: const TextStyle(
+                        DateFormat(
+                          'dd MMM yyyy, HH:mm',
+                        ).format(order.createdAt),
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey,
+                          color: Colors.grey.shade500,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
                 ),
+
+                // --- BADGE STATUS ---
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
+                    horizontal: 10,
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(order.status).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: _getStatusColor(order.status)),
+                    color: _getStatusColor(order.status).withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     order.status.displayName,
@@ -166,151 +288,216 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            const Divider(),
-            const SizedBox(height: 12),
 
-            // Merchant/Customer Info
-            if (widget.isMerchant)
-              Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Customer Order:'),
-                      Text(
-                        'Order #${order.id}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              )
-            else
-              Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Merchant:'),
-                      Text(
-                        order.merchantName,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Divider(color: Colors.grey.shade100, height: 1),
+            ),
 
-            // Service Type
+            // --- INFO PENGGUNA (MERCHANT / CUSTOMER) & TYPE ---
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Service Type:'),
+                Row(
+                  children: [
+                    Icon(
+                      widget.isMerchant
+                          ? Icons.person_outline_rounded
+                          : Icons.storefront_rounded,
+                      size: 16,
+                      color: Colors.grey.shade600,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      widget.isMerchant ? 'Customer Order' : 'Merchant:',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
                 Text(
-                  order.serviceType == 'delivery' ? 'Delivery' : 'Pick Up',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  widget.isMerchant ? '#${order.id}' : order.merchantName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
 
-            // Items Count
-            Text(
-              '${order.items.length} item${order.items.length > 1 ? 's' : ''}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      isDelivery
+                          ? Icons.local_shipping_outlined
+                          : Icons.store_mall_directory_outlined,
+                      size: 16,
+                      color: Colors.grey.shade600,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Service Type',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDelivery
+                        ? AppColors.tigerFlame.withOpacity(0.08)
+                        : AppColors.stormyTeal.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    isDelivery ? 'Delivery' : 'Pick Up',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                      color: isDelivery
+                          ? AppColors.tigerFlame
+                          : AppColors.stormyTeal,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
 
-            // Items Summary
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: order.items.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 4),
-                itemBuilder: (context, index) {
-                  final item = order.items[index];
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item.menuName,
-                          style: const TextStyle(fontSize: 13),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Text(
-                        'x${item.quantity}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
             const SizedBox(height: 12),
 
-            // Total Amount
+            // --- KOTAK RANGKUMAN ITEM BELANJAAN ---
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.cream.withOpacity(
+                  0.4,
+                ), // Perpaduan warna cream lembut Anda
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${order.items.length} item${order.items.length > 1 ? 's' : ''} purchased:',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: order.items.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 4),
+                    itemBuilder: (context, index) {
+                      final item = order.items[index];
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.menuName,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Colors.black87,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            'x${item.quantity}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // --- TOTAL AMOUNT & METADATA SELESAI ---
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Total Amount:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  'Total Bill',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Colors.black87,
+                  ),
                 ),
                 Text(
                   currency.format(order.totalAmount),
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                     fontSize: 16,
-                    color: AppColors.tigerFlame,
+                    color: AppColors.tigerFlame, // Highlight harga akhir
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
 
-            // Completed Date
-            if (order.completedAt != null)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Completed:',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  Text(
-                    DateFormat('dd MMM yyyy, HH:mm').format(order.completedAt!),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
+            if (order.completedAt != null || order.completedAt == null) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Divider(color: Colors.grey.shade100, height: 1),
               ),
-            if (order.completedAt == null)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Current status:',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  Text(
-                    order.status.displayName,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      order.completedAt != null
+                          ? 'Completed:'
+                          : 'Current Status:',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      order.completedAt != null
+                          ? DateFormat(
+                              'dd MMM yyyy, HH:mm',
+                            ).format(order.completedAt!)
+                          : order.status.displayName,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: order.completedAt != null
+                            ? Colors.green.shade600
+                            : AppColors.tigerFlame,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+            ],
           ],
         ),
       ),

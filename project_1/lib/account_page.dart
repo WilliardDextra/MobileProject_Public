@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_1/register_page.dart';
+import 'package:project_1/order_history_page.dart';
 import 'package:provider/provider.dart';
 import 'package:project_1/colorPallette.dart';
 import 'package:project_1/providers/app_state_provider.dart';
@@ -340,6 +341,42 @@ class _AccountPageState extends State<AccountPage> {
                     ],
                   ),
                 ],
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // View My Orders Section
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const OrderHistoryPage(isMerchant: false),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.tigerFlame,
+                  foregroundColor: Colors.white,
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                icon: const Icon(Icons.shopping_bag_outlined, size: 22),
+                label: const Text(
+                  'View My Orders',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                  ),
+                ),
               ),
             ),
 

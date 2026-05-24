@@ -36,7 +36,6 @@ app.post("/api/register", async (req, res) => {
         .json({ status: "error", message: "Missing required fields" });
     }
 
-    // If registering as merchant, require store_name, owner_name, store_address
     if (String(role).toLowerCase() === "merchant") {
       if (!store_name || !owner_name || !store_address) {
         return res.status(400).json({
@@ -63,7 +62,6 @@ app.post("/api/register", async (req, res) => {
       store_address || null,
     ]);
 
-    // If merchant, create a bakeries record tied to this user (minimal fields)
     if (String(role).toLowerCase() === "merchant") {
       const userId = result.insertId;
       const bakerySql =
@@ -281,7 +279,6 @@ app.get("/api/bakeries/:id/menus", async (req, res) => {
   }
 });
 
-// Helper: verify bakery ownership by user_id
 async function verifyBakeryOwner(bakeryId, userId) {
   const [rows] = await db.query(
     "SELECT id, user_id FROM bakeries WHERE id = ?",
@@ -294,7 +291,6 @@ async function verifyBakeryOwner(bakeryId, userId) {
   return { ok: true };
 }
 
-// Merchant: list all menus for merchant's bakeries
 app.get("/api/merchant/:userId/menus", async (req, res) => {
   const userId = req.params.userId;
   try {
@@ -308,7 +304,6 @@ app.get("/api/merchant/:userId/menus", async (req, res) => {
   }
 });
 
-// Merchant: create menu item
 app.post("/api/merchant/menus", async (req, res) => {
   const {
     user_id,
@@ -344,7 +339,6 @@ app.post("/api/merchant/menus", async (req, res) => {
   }
 });
 
-// Merchant: update menu item
 app.put("/api/merchant/menus/:id", async (req, res) => {
   const menuId = req.params.id;
   const {
@@ -409,7 +403,6 @@ app.put("/api/merchant/menus/:id", async (req, res) => {
   }
 });
 
-// Merchant: delete menu item
 app.delete("/api/merchant/menus/:id", async (req, res) => {
   const menuId = req.params.id;
   const { user_id } = req.body;
@@ -432,10 +425,9 @@ app.delete("/api/merchant/menus/:id", async (req, res) => {
   }
 });
 
-// Merchant: toggle active state
 app.patch("/api/merchant/menus/:id/toggle-active", async (req, res) => {
   const menuId = req.params.id;
-  const { user_id, is_active } = req.body; // if is_active provided, set to that; else flip
+  const { user_id, is_active } = req.body;
   try {
     const [menus] = await db.query("SELECT * FROM menus WHERE id = ?", [
       menuId,
@@ -461,7 +453,6 @@ app.patch("/api/merchant/menus/:id/toggle-active", async (req, res) => {
   }
 });
 
-// Merchant: list orders for all bakeries owned by merchant
 app.get("/api/merchant/:userId/orders", async (req, res) => {
   const userId = req.params.userId;
   try {
@@ -474,9 +465,7 @@ app.get("/api/merchant/:userId/orders", async (req, res) => {
     const bakeryIds = bakeries.map((b) => b.id);
     const bakeryNames = bakeries.map((b) => b.name);
 
-    // Try to query payment_history by bakery_id if that column exists in table
     try {
-      // build placeholders
       const idPlaceholders = bakeryIds.map(() => "?").join(",");
       const [rows] = await db.query(
         `SELECT * FROM payment_history WHERE bakery_id IN (${idPlaceholders}) ORDER BY date DESC`,
@@ -484,7 +473,6 @@ app.get("/api/merchant/:userId/orders", async (req, res) => {
       );
       return res.json(rows);
     } catch (err) {
-      // fallback to matching by restaurant_name
       const namePlaceholders = bakeryNames.map(() => "?").join(",");
       const [rows2] = await db.query(
         `SELECT * FROM payment_history WHERE restaurant_name IN (${namePlaceholders}) ORDER BY date DESC`,
@@ -497,7 +485,6 @@ app.get("/api/merchant/:userId/orders", async (req, res) => {
   }
 });
 
-// Merchant: get single order by id (best-effort)
 app.get("/api/merchant/:userId/orders/:orderId", async (req, res) => {
   const { userId, orderId } = req.params;
   try {
@@ -517,11 +504,8 @@ app.get("/api/merchant/:userId/orders/:orderId", async (req, res) => {
         [orderId, bakeryIds],
       );
       if (rows.length > 0) return res.json(rows[0]);
-    } catch (err) {
-      // ignore
-    }
+    } catch (err) {}
 
-    // fallback by name
     const [rows2] = await db.query(
       "SELECT * FROM payment_history WHERE id = ? AND restaurant_name IN (?)",
       [orderId, bakeryNames],
@@ -536,9 +520,6 @@ app.get("/api/merchant/:userId/orders/:orderId", async (req, res) => {
   }
 });
 
-// ==================== ORDER MANAGEMENT ENDPOINTS ====================
-
-// Create new order
 app.post("/api/orders", async (req, res) => {
   const {
     user_id,
@@ -565,7 +546,6 @@ app.post("/api/orders", async (req, res) => {
       });
     }
 
-    // Insert order
     const [orderResult] = await db.query(
       "INSERT INTO orders (user_id, merchant_id, merchant_name, service_type, subtotal, delivery_fee, packaging_fee, app_fee, discount, coins_used, total_amount, payment_method, voucher, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'preparing')",
       [
@@ -587,7 +567,6 @@ app.post("/api/orders", async (req, res) => {
 
     const orderId = orderResult.insertId;
 
-    // Insert order items
     for (const item of items) {
       await db.query(
         "INSERT INTO order_items (order_id, menu_id, menu_name, price, quantity, image) VALUES (?, ?, ?, ?, ?, ?)",
@@ -612,7 +591,6 @@ app.post("/api/orders", async (req, res) => {
   }
 });
 
-// Get order by ID
 app.get("/api/orders/:orderId", async (req, res) => {
   const orderId = req.params.orderId;
 
@@ -629,7 +607,6 @@ app.get("/api/orders/:orderId", async (req, res) => {
 
     const order = orders[0];
 
-    // Get order items
     const [items] = await db.query(
       "SELECT * FROM order_items WHERE order_id = ?",
       [orderId],
@@ -647,7 +624,6 @@ app.get("/api/orders/:orderId", async (req, res) => {
   }
 });
 
-// Get orders for customer
 app.get("/api/orders/user/:userId", async (req, res) => {
   const userId = req.params.userId;
 
@@ -675,7 +651,6 @@ app.get("/api/orders/user/:userId", async (req, res) => {
   }
 });
 
-// Get orders for merchant
 app.get("/api/orders/merchant/:merchantId", async (req, res) => {
   const merchantId = req.params.merchantId;
 
@@ -703,7 +678,6 @@ app.get("/api/orders/merchant/:merchantId", async (req, res) => {
   }
 });
 
-// Update order status
 app.put("/api/orders/:orderId/status", async (req, res) => {
   const orderId = req.params.orderId;
   const { status } = req.body;
@@ -751,7 +725,6 @@ app.put("/api/orders/:orderId/status", async (req, res) => {
   }
 });
 
-// Get orders by status (for filtering)
 app.get("/api/orders/status/:status", async (req, res) => {
   const { status } = req.params;
   const { user_id, merchant_id } = req.query;

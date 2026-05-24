@@ -9,6 +9,7 @@ import 'package:project_1/providers/app_state_provider.dart';
 import 'package:project_1/providers/cart_provider.dart';
 import 'package:project_1/services/api_service.dart';
 import 'package:project_1/account_page.dart';
+import 'package:project_1/order_history_page.dart';
 import 'package:provider/provider.dart';
 import 'colorPallette.dart';
 import 'search.dart';
@@ -83,7 +84,6 @@ class _MyHomePageState extends State<MyHomePage> {
     final selectedIndex = appState.selectedIndex;
     final cartProvider = context.watch<CartProvider>();
 
-    // Build pages & navigation depending on role
     final isMerchant = appState.role.toLowerCase() == 'merchant';
 
     final List<Widget> pages = isMerchant
@@ -93,14 +93,13 @@ class _MyHomePageState extends State<MyHomePage> {
             const AccountPage(),
           ]
         : [
-            _buildStatusPage(cartProvider.history),
+            _buildStatusPage(context, cartProvider.history),
             const SearchPage(),
             _buildLandingPage(),
             CartPage(),
             const AccountPage(),
           ];
 
-    // Ensure selectedIndex is within bounds
     int currentIndex = selectedIndex;
     if (currentIndex >= pages.length) {
       currentIndex = 0;
@@ -207,69 +206,194 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _buildStatusPage(List<PaymentHistoryEntry> history) {
+  Widget _buildStatusPage(
+    BuildContext context,
+    List<PaymentHistoryEntry> history,
+  ) {
     if (history.isEmpty) {
-      return const Center(
-        child: Text(
-          'No payment history yet.',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // View All Orders Button
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const OrderHistoryPage(isMerchant: false),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.stormyTeal,
+                    foregroundColor: Colors.white,
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.list_alt_rounded, size: 22),
+                  label: const Text(
+                    'View All Orders',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              const Center(
+                child: Text(
+                  'No payment history yet.',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: history.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final entry = history[index];
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(20),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                entry.restaurantName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // View All Orders Button
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const OrderHistoryPage(isMerchant: false),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.stormyTeal,
+                  foregroundColor: Colors.white,
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                icon: const Icon(Icons.list_alt_rounded, size: 22),
+                label: const Text(
+                  'View All Orders',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                DateFormat('dd MMM yyyy, HH:mm').format(entry.date),
-                style: const TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 20),
+
+            // Payment History Section
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.receipt_long,
+                      color: AppColors.stormyTeal,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Payment History (${history.length})',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 12),
-              Text('Service: ${entry.serviceType}'),
-              const SizedBox(height: 4),
-              Text('Payment: ${entry.paymentMethod}'),
-              const SizedBox(height: 4),
-              Text('Items: ${entry.itemCount}'),
-              const SizedBox(height: 4),
-              Text('Voucher: ${entry.voucher}'),
-              const SizedBox(height: 4),
-              Text('Coins used: Rp${entry.coinsUsed.toStringAsFixed(0)}'),
-              const Divider(height: 20),
-              Text(
-                'Total: Rp${entry.totalAmount.toStringAsFixed(0)}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        );
-      },
+            ),
+            const SizedBox(height: 12),
+
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: history.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final entry = history[index];
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(20),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.restaurantName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        DateFormat('dd MMM yyyy, HH:mm').format(entry.date),
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 12),
+                      Text('Service: ${entry.serviceType}'),
+                      const SizedBox(height: 4),
+                      Text('Payment: ${entry.paymentMethod}'),
+                      const SizedBox(height: 4),
+                      Text('Items: ${entry.itemCount}'),
+                      const SizedBox(height: 4),
+                      Text('Voucher: ${entry.voucher}'),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Coins used: Rp${entry.coinsUsed.toStringAsFixed(0)}',
+                      ),
+                      const Divider(height: 20),
+                      Text(
+                        'Total: Rp${entry.totalAmount.toStringAsFixed(0)}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -613,14 +737,14 @@ class _MyHomePageState extends State<MyHomePage> {
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [AppColors.stormyTeal, Color(0xFF004D4B)],
+                colors: [Color.fromARGB(139, 0, 97, 95), Color(0xFF004D4B)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.stormyTeal.withOpacity(0.15),
+                  color: AppColors.stormyTeal.withAlpha(35),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),
@@ -631,11 +755,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.eco_rounded,
-                      color: AppColors.cream,
-                      size: 28,
-                    ),
+                    Image.asset("images/FoodSaver_Orange_Main.png", height: 30),
                     const SizedBox(width: 8),
                     Text(
                       "FoodSaver".toUpperCase(),
@@ -679,7 +799,7 @@ class _MyHomePageState extends State<MyHomePage> {
           const Padding(
             padding: EdgeInsets.only(left: 4, bottom: 12),
             child: Text(
-              "Why Choose FoodSaver?",
+              "Why Choose Us?",
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
